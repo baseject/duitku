@@ -82,9 +82,8 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
 /* sheet */
 .ovl{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;display:none;align-items:flex-end;backdrop-filter:blur(4px)}
 .ovl.open{display:flex}
-.sheet{background:var(--card);border-radius:24px 24px 0 0;width:100%;max-width:430px;margin:0 auto;max-height:92vh;display:flex;flex-direction:column}
-.ovl.open .sheet{animation:shUp .3s cubic-bezier(.32,.72,0,1)}
-@keyframes shUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.sheet{background:var(--card);border-radius:24px 24px 0 0;width:100%;max-width:430px;margin:0 auto;max-height:92vh;display:flex;flex-direction:column;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,0,1)}
+.ovl.open .sheet{transform:translateY(0)}
 .sh-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:12px auto 0}
 .sh-hd{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 12px}
 .sh-title{font-size:17px;font-weight:800;letter-spacing:-.3px}
@@ -667,10 +666,10 @@ function logout(){
 async function loadAll(){
   const uid=S.user.id;
   const[wallets,budgets,savings,routines,debts]=await Promise.all([
-    dbG(`dk_wallets?user_id=eq.${uid}&deleted_at=is.null&order=created_at.asc`).catch(()=>[]),
-    dbG(`dk_budgets?user_id=eq.${uid}&deleted_at=is.null`).catch(()=>[]),
-    dbG(`dk_savings?user_id=eq.${uid}&deleted_at=is.null`).catch(()=>[]),
-    dbG(`dk_routines?user_id=eq.${uid}&deleted_at=is.null`).catch(()=>[]),
+    dbG(`dk_wallets?user_id=eq.${uid}&deleted_at=is.null&order=created_at.asc`),
+    dbG(`dk_budgets?user_id=eq.${uid}&deleted_at=is.null`),
+    dbG(`dk_savings?user_id=eq.${uid}&deleted_at=is.null`),
+    dbG(`dk_routines?user_id=eq.${uid}&deleted_at=is.null`),
     dbG(`dk_debts?user_id=eq.${uid}&deleted_at=is.null&order=created_at.desc`).catch(()=>[])
   ]);
   S.wallets=wallets;S.budgets=budgets;S.savings=savings;S.routines=routines;S.debts=debts;
@@ -682,7 +681,7 @@ async function loadAll(){
 }
 async function loadTrx(){
   if(!S.user)return;
-  S.trx=await dbG(`dk_trx?user_id=eq.${S.user.id}&deleted_at=is.null&order=date.desc,created_at.desc`).catch(()=>[]);
+  S.trx=await dbG(`dk_trx?user_id=eq.${S.user.id}&deleted_at=is.null&order=date.desc,created_at.desc`);
 }
 
 // ── WALLET SWITCH ─────────────────────────────────────
@@ -1397,7 +1396,7 @@ function exportPDF(){
   <table><tr><th>Kategori</th><th>Jumlah</th><th>%</th></tr>${catRows}</table>
   <h2>Riwayat Transaksi</h2>
   <table><tr><th>Tanggal</th><th>Keterangan</th><th>Dompet</th><th>Jumlah</th></tr>${rows}</table>
-  <script>window.onload=()=>window.print()</script></body></html>`;
+  <scr"+"ipt>window.onload=()=>window.print()</scr"+"ipt></body></html>`;
 
   const w=window.open('','_blank');w.document.write(html);w.document.close();
   toast('Membuka laporan PDF...','ok');
@@ -1420,9 +1419,7 @@ async function handleScan(e){
         model:'claude-sonnet-4-20250514',max_tokens:500,
         messages:[{role:'user',content:[
           {type:'image',source:{type:'base64',media_type:file.type,data:base64}},
-          {type:'text',text:`Kamu adalah pembaca struk belanja. Baca struk ini dan ekstrak informasi berikut dalam format JSON saja, tanpa teks lain:
-{"amount": <total belanja dalam angka tanpa titik/koma, contoh 65000>, "category": "<salah satu: makan/transport/belanja/hiburan/kesehatan/tagihan/pendidikan/lainnya>", "note": "<nama toko atau deskripsi singkat max 30 karakter>", "date": "<tanggal struk format YYYY-MM-DD, jika tidak ada tulis null>"}
-Jika bukan struk atau tidak bisa dibaca, tulis: {"error": "bukan struk"}`}
+          {type:'text',text:'Kamu adalah pembaca struk belanja. Baca struk ini dan ekstrak informasi berikut dalam format JSON saja, tanpa teks lain:\n{\"amount\": <total belanja tanpa titik/koma contoh 65000>, \"category\": \"<makan/transport/belanja/hiburan/kesehatan/tagihan/pendidikan/lainnya>\", \"note\": \"<nama toko max 30 karakter>\", \"date\": \"<YYYY-MM-DD atau null>\"}\nJika bukan struk tulis: {\"error\": \"bukan struk\"}'}
         ]}]
       })
     });
@@ -1486,8 +1483,8 @@ function rHutang(){
         </div>
         <div>
           <div class="debt-status ${d.settled_at?'done':isOwe?'owe':'lend'}">${d.settled_at?'Lunas':isOwe?'Berhutang':'Piutang'}</div>
-          ${overdue?`<div style="font-size:9px;color:var(--red);font-weight:700;margin-top:3px;text-align:right">Telat!</div>`:''}
-          ${d.due_date&&!d.settled_at?`<div style="font-size:9px;color:var(--muted);margin-top:2px;text-align:right">Jatuh ${fmtDS(d.due_date)}</div>`:''}
+          ${overdue?'<div style="font-size:9px;color:var(--red);font-weight:700;margin-top:3px;text-align:right">Telat!</div>':''}
+          ${d.due_date&&!d.settled_at?('<div style="font-size:9px;color:var(--muted);margin-top:2px;text-align:right">Jatuh '+fmtDS(d.due_date)+'</div>'):''}
         </div>
       </div>
       <div class="debt-amt ${d.settled_at?'':isOwe?'owe':'lend'}" style="${d.settled_at?'color:var(--muted)':''}">${isOwe?'-':'+'}${rp(d.amount)}</div>
