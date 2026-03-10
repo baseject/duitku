@@ -82,8 +82,9 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
 /* sheet */
 .ovl{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;display:none;align-items:flex-end;backdrop-filter:blur(4px)}
 .ovl.open{display:flex}
-.sheet{background:var(--card);border-radius:24px 24px 0 0;width:100%;max-width:430px;margin:0 auto;max-height:92vh;display:flex;flex-direction:column;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,0,1)}
-.ovl.open .sheet{transform:translateY(0)}
+.sheet{background:var(--card);border-radius:24px 24px 0 0;width:100%;max-width:430px;margin:0 auto;max-height:92vh;display:flex;flex-direction:column}
+.ovl.open .sheet{animation:shUp .3s cubic-bezier(.32,.72,0,1)}
+@keyframes shUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 .sh-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:12px auto 0}
 .sh-hd{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 12px}
 .sh-title{font-size:17px;font-weight:800;letter-spacing:-.3px}
@@ -666,10 +667,10 @@ function logout(){
 async function loadAll(){
   const uid=S.user.id;
   const[wallets,budgets,savings,routines,debts]=await Promise.all([
-    dbG(`dk_wallets?user_id=eq.${uid}&deleted_at=is.null&order=created_at.asc`),
-    dbG(`dk_budgets?user_id=eq.${uid}&deleted_at=is.null`),
-    dbG(`dk_savings?user_id=eq.${uid}&deleted_at=is.null`),
-    dbG(`dk_routines?user_id=eq.${uid}&deleted_at=is.null`),
+    dbG(`dk_wallets?user_id=eq.${uid}&deleted_at=is.null&order=created_at.asc`).catch(()=>[]),
+    dbG(`dk_budgets?user_id=eq.${uid}&deleted_at=is.null`).catch(()=>[]),
+    dbG(`dk_savings?user_id=eq.${uid}&deleted_at=is.null`).catch(()=>[]),
+    dbG(`dk_routines?user_id=eq.${uid}&deleted_at=is.null`).catch(()=>[]),
     dbG(`dk_debts?user_id=eq.${uid}&deleted_at=is.null&order=created_at.desc`).catch(()=>[])
   ]);
   S.wallets=wallets;S.budgets=budgets;S.savings=savings;S.routines=routines;S.debts=debts;
@@ -681,7 +682,7 @@ async function loadAll(){
 }
 async function loadTrx(){
   if(!S.user)return;
-  S.trx=await dbG(`dk_trx?user_id=eq.${S.user.id}&deleted_at=is.null&order=date.desc,created_at.desc`);
+  S.trx=await dbG(`dk_trx?user_id=eq.${S.user.id}&deleted_at=is.null&order=date.desc,created_at.desc`).catch(()=>[]);
 }
 
 // ── WALLET SWITCH ─────────────────────────────────────
