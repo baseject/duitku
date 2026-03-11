@@ -449,6 +449,21 @@ function toast(msg,type='i'){
   el.textContent=msg;document.body.appendChild(el);
   setTimeout(()=>{el.style.opacity='0';setTimeout(()=>el.remove(),300)},2200);
 }
+function confirmSheet(title,sub,onYes){
+  const m=document.createElement('div');
+  m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px)';
+  m.innerHTML=`<div style="background:var(--card);border-radius:24px 24px 0 0;width:100%;max-width:430px;padding:24px 18px 40px;text-align:center">
+    <div style="font-size:32px;margin-bottom:10px">🗑️</div>
+    <div style="font-size:17px;font-weight:800;margin-bottom:6px">${title}</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:24px;line-height:1.5">${sub}</div>
+    <button id="_cy" style="width:100%;padding:13px;border-radius:12px;border:none;background:var(--red);color:#fff;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:8px">Ya, Hapus</button>
+    <button id="_cn" style="width:100%;padding:13px;border-radius:12px;border:1.5px solid var(--border);background:none;font-size:14px;font-weight:600;cursor:pointer;color:var(--muted)">Batal</button>
+  </div>`;
+  document.body.appendChild(m);
+  m.querySelector('#_cy').onclick=()=>{m.remove();onYes();};
+  m.querySelector('#_cn').onclick=()=>m.remove();
+  m.onclick=(e)=>{if(e.target===m)m.remove();};
+}
 
 
 // ── THEME ─────────────────────────────────────────────
@@ -490,14 +505,9 @@ async function authSubmit(){
   try{
     const ex=await dbG(`rl_users?username=eq.${u}&select=id,username`);
     if(ex.length){
-      // user exists, create default wallet if none
-      const ws=await dbG(`dk_wallets?user_id=eq.${ex[0].id}&deleted_at=is.null`);
-      if(!ws.length)await dbP('dk_wallets',{id:nuid(),user_id:ex[0].id,name:'Kas',emoji:'💵',balance:0});
       await doLogin(ex[0]);
     }else{
-      // new user
       const[usr]=await dbP('rl_users',{id:nuid(),username:u});
-      await dbP('dk_wallets',{id:nuid(),user_id:usr.id,name:'Kas',emoji:'💵',balance:0});
       await doLogin(usr);
     }
   }catch(err){e.textContent='Gagal: '+err.message;btn.textContent='💰 Masuk';btn.disabled=false}
@@ -523,13 +533,17 @@ function logout(){
 async function loadAll(){
   const uid=S.user.id;
   const[wallets,budgets,savings,routines]=await Promise.all([
-    dbG(`dk_wallets?user_id=eq.${uid}&deleted_at=is.null&order=created_at.asc`),
+    dbG(`dk_wallets?user_id=eq.${uid}&deleted_at=is.null`),
     dbG(`dk_budgets?user_id=eq.${uid}&deleted_at=is.null`),
     dbG(`dk_savings?user_id=eq.${uid}&deleted_at=is.null`),
     dbG(`dk_routines?user_id=eq.${uid}&deleted_at=is.null`)
   ]);
-  S.wallets=wallets;S.budgets=budgets;S.savings=savings;S.routines=routines;
-  if(wallets.length){
+  S.budgets=budgets;S.savings=savings;S.routines=routines;
+  if(!wallets.length){
+    const[w]=await dbP('dk_wallets',{id:nuid(),user_id:S.user.id,name:'Kas',emoji:'💵',balance:0});
+    S.wallets=[w];S.wid=w.id;
+  }else{
+    S.wallets=wallets;
     const saved=localStorage.getItem('dk_wid');
     S.wid=wallets.find(w=>w.id===saved)?saved:wallets[0].id;
   }
@@ -537,7 +551,7 @@ async function loadAll(){
 }
 async function loadTrx(){
   if(!S.user)return;
-  S.trx=await dbG(`dk_trx?user_id=eq.${S.user.id}&deleted_at=is.null&order=date.desc,created_at.desc`);
+  S.trx=await dbG(`dk_trx?user_id=eq.${S.user.id}&deleted_at=is.null&order=date.desc`);
 }
 
 // ── WALLET SWITCH ─────────────────────────────────────
@@ -652,7 +666,7 @@ function setTrxFilter(f){
 function rTrx(){
   updWalletChips();
   const li=document.getElementById('t-list');
-  let data=S.trx.filter(t=>!S.wid||t.wallet_id===S.wid||S.wid==='all');
+  let data=S.wid?S.trx.filter(t=>t.wallet_id===S.wid):S.trx.slice();
   if(trxFilter==='in')data=data.filter(t=>t.type==='in');
   if(trxFilter==='out')data=data.filter(t=>t.type==='out');
   if(!data.length){li.innerHTML=`<div class="empty"><div class="empty-ico">📋</div><div class="empty-title">Belum ada transaksi</div><div class="empty-sub">Tap + untuk mencatat</div></div>`;return}
@@ -766,21 +780,22 @@ async function saveTrx(){
 }
 async function delTrx(){
   const id=document.getElementById('tf-id').value;
-  if(!confirm('Hapus transaksi ini?'))return;
-  try{
-    const t=S.trx.find(x=>x.id===id);
-    const w=S.wallets.find(x=>x.id===t?.wallet_id);
-    if(w){
-      let newBal=w.balance;
-      if(t.type==='in')newBal-=t.amount;
-      else newBal+=t.amount;
-      await dbU(`dk_wallets?id=eq.${w.id}`,{balance:newBal});
-      w.balance=newBal;
-    }
-    await dbU(`dk_trx?id=eq.${id}`,{deleted_at:new Date().toISOString()});
-    S.trx=S.trx.filter(t=>t.id!==id);
-    csh('sh-tf');toast('Transaksi dihapus','ok');rHome();rTrx();
-  }catch(err){toast('Gagal: '+err.message,'e')}
+  confirmSheet('Hapus transaksi ini?','Saldo dompet akan disesuaikan.',async()=>{
+    try{
+      const t=S.trx.find(x=>x.id===id);
+      const w=S.wallets.find(x=>x.id===t?.wallet_id);
+      if(w){
+        let newBal=w.balance;
+        if(t.type==='in')newBal-=t.amount;
+        else newBal+=t.amount;
+        await dbU(`dk_wallets?id=eq.${w.id}`,{balance:newBal});
+        w.balance=newBal;
+      }
+      await dbU(`dk_trx?id=eq.${id}`,{deleted_at:new Date().toISOString()});
+      S.trx=S.trx.filter(t=>t.id!==id);
+      csh('sh-tf');toast('Transaksi dihapus','ok');rHome();rTrx();
+    }catch(err){toast('Gagal: '+err.message,'e')}
+  });
 }
 
 // ── BUDGET PAGE ───────────────────────────────────────
@@ -854,11 +869,12 @@ async function saveBudget(){
 }
 async function delBudget(){
   const id=document.getElementById('bf-id').value;
-  if(!confirm('Hapus budget ini?'))return;
-  try{
-    await dbU(`dk_budgets?id=eq.${id}`,{deleted_at:new Date().toISOString()});
-    S.budgets=S.budgets.filter(b=>b.id!==id);csh('sh-bf');toast('Budget dihapus','ok');rBudget();
-  }catch(err){toast('Gagal: '+err.message,'e')}
+  confirmSheet('Hapus budget ini?','Data tidak bisa dikembalikan.',async()=>{
+    try{
+      await dbU(`dk_budgets?id=eq.${id}`,{deleted_at:new Date().toISOString()});
+      S.budgets=S.budgets.filter(b=>b.id!==id);csh('sh-bf');toast('Budget dihapus','ok');rBudget();
+    }catch(err){toast('Gagal: '+err.message,'e')}
+  });
 }
 
 // ── SAVING PAGE ───────────────────────────────────────
@@ -902,13 +918,30 @@ function openSavingDetail(id){
 }
 function openSavingTopup(id){
   const s=S.savings.find(x=>x.id===id);if(!s)return;
-  const amt=prompt(`Tambah berapa ke "${s.name}"? (Rp)`);
-  if(!amt)return;
-  const n=parseFloat(amt);
-  if(!n||n<=0){toast('Jumlah tidak valid','e');return}
-  dbU(`dk_savings?id=eq.${id}`,{saved:s.saved+n}).then(()=>{
-    s.saved+=n;csh('sh-svd');toast('Tabungan ditambahkan!','ok');rSaving();rHome();
-  }).catch(err=>toast('Gagal: '+err.message,'e'));
+  const m=document.createElement('div');
+  m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px)';
+  m.innerHTML=`<div style="background:var(--card);border-radius:24px 24px 0 0;width:100%;max-width:430px;padding:24px 18px 40px">
+    <div style="font-size:17px;font-weight:800;margin-bottom:4px">${s.emoji} Tambah ke ${s.name}</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:16px">Sudah terkumpul: ${rp(s.saved)} dari ${rp(s.target)}</div>
+    <div style="position:relative;margin-bottom:16px">
+      <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;font-weight:600">Rp</span>
+      <input id="_tu_amt" type="number" inputmode="numeric" placeholder="100000" style="padding-left:32px;width:100%;background:var(--card2);border:1.5px solid var(--border);border-radius:12px;padding:12px 14px 12px 32px;font-size:14px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;outline:none">
+    </div>
+    <button id="_tu_ok" style="width:100%;padding:13px;border-radius:12px;border:none;background:var(--accent);color:#0d0d0d;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:8px">+ Tambah Tabungan</button>
+    <button id="_tu_cn" style="width:100%;padding:13px;border-radius:12px;border:1.5px solid var(--border);background:none;font-size:14px;font-weight:600;cursor:pointer;color:var(--muted)">Batal</button>
+  </div>`;
+  document.body.appendChild(m);
+  m.querySelector('#_tu_amt').focus();
+  m.querySelector('#_tu_ok').onclick=async()=>{
+    const n=parseFloat(m.querySelector('#_tu_amt').value);
+    if(!n||n<=0){toast('Isi jumlah dulu','e');return}
+    try{
+      await dbU(`dk_savings?id=eq.${id}`,{saved:s.saved+n});
+      s.saved+=n;m.remove();csh('sh-svd');toast('Tabungan bertambah! 🎉','ok');rSaving();rHome();
+    }catch(err){toast('Gagal: '+err.message,'e')}
+  };
+  m.querySelector('#_tu_cn').onclick=()=>m.remove();
+  m.onclick=(e)=>{if(e.target===m)m.remove();};
 }
 function openSavingAdd(){
   document.getElementById('svf-id').value='';
@@ -953,11 +986,12 @@ async function saveSaving(){
 }
 async function delSaving(){
   const id=document.getElementById('svf-id').value;
-  if(!confirm('Hapus tabungan ini?'))return;
-  try{
-    await dbU(`dk_savings?id=eq.${id}`,{deleted_at:new Date().toISOString()});
-    S.savings=S.savings.filter(s=>s.id!==id);csh('sh-svf');toast('Tabungan dihapus','ok');rSaving();
-  }catch(err){toast('Gagal: '+err.message,'e')}
+  confirmSheet('Hapus tabungan ini?','Semua progres akan hilang.',async()=>{
+    try{
+      await dbU(`dk_savings?id=eq.${id}`,{deleted_at:new Date().toISOString()});
+      S.savings=S.savings.filter(s=>s.id!==id);csh('sh-svf');toast('Tabungan dihapus','ok');rSaving();
+    }catch(err){toast('Gagal: '+err.message,'e')}
+  });
 }
 
 // ── WALLET CRUD ───────────────────────────────────────
@@ -999,13 +1033,14 @@ async function saveWallet(){
 }
 async function delWallet(){
   const id=document.getElementById('wf-id').value;
-  if(!confirm('Hapus dompet ini?'))return;
-  try{
-    await dbU(`dk_wallets?id=eq.${id}`,{deleted_at:new Date().toISOString()});
-    S.wallets=S.wallets.filter(w=>w.id!==id);
-    if(S.wid===id)S.wid=S.wallets[0]?.id||null;
-    csh('sh-wf');toast('Dompet dihapus','ok');rSet();rHome();
-  }catch(err){toast('Gagal: '+err.message,'e')}
+  confirmSheet('Hapus dompet ini?','Transaksi terkait tidak ikut terhapus.',async()=>{
+    try{
+      await dbU(`dk_wallets?id=eq.${id}`,{deleted_at:new Date().toISOString()});
+      S.wallets=S.wallets.filter(w=>w.id!==id);
+      if(S.wid===id)S.wid=S.wallets[0]?.id||null;
+      csh('sh-wf');toast('Dompet dihapus','ok');rSet();rHome();
+    }catch(err){toast('Gagal: '+err.message,'e')}
+  });
 }
 
 // ── ROUTINE ───────────────────────────────────────────
@@ -1042,11 +1077,12 @@ async function saveRoutine(){
 }
 async function delRoutine(){
   const id=document.getElementById('rf-id').value;
-  if(!confirm('Hapus transaksi rutin ini?'))return;
-  try{
-    await dbU(`dk_routines?id=eq.${id}`,{deleted_at:new Date().toISOString()});
-    S.routines=S.routines.filter(r=>r.id!==id);csh('sh-rf');toast('Rutin dihapus','ok');rSet();
-  }catch(err){toast('Gagal: '+err.message,'e')}
+  confirmSheet('Hapus transaksi rutin ini?','Data tidak bisa dikembalikan.',async()=>{
+    try{
+      await dbU(`dk_routines?id=eq.${id}`,{deleted_at:new Date().toISOString()});
+      S.routines=S.routines.filter(r=>r.id!==id);csh('sh-rf');toast('Rutin dihapus','ok');rSet();
+    }catch(err){toast('Gagal: '+err.message,'e')}
+  });
 }
 
 // ── SETTINGS ──────────────────────────────────────────
