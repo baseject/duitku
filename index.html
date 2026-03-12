@@ -217,13 +217,13 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
   <!-- HOME -->
   <div class="page active" id="pg-home">
     <div class="hd">
-      <div class="wchip" onclick="openWalletSwitch()"><span>💳</span><span id="hd-wn">Dompet</span><span style="color:var(--muted);font-size:10px">▾</span></div>
+      <div class="wchip" onclick="openWalletSwitch()" style="background:var(--al);border:1.5px solid var(--accent);padding:7px 14px;gap:7px"><span>💳</span><span id="hd-wn" style="color:var(--accent);font-weight:800">Dompet</span><span style="color:var(--accent);font-size:11px;font-weight:800">▾</span></div>
       <div class="hd-row">
         <button class="hd-btn" id="theme-btn" onclick="toggleTheme()">☀️</button>
         <button class="hd-btn" onclick="navTo('settings')">⚙️</button>
       </div>
     </div>
-    <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+    <div style="padding:16px;display:flex;flex-direction:column;gap:16px">
       <div id="h-balance"></div>
       <div id="h-budget"></div>
       <div id="h-saving"></div>
@@ -235,7 +235,11 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
   <div class="page" id="pg-trx">
     <div class="hd">
       <div class="hd-title">📋 Transaksi</div>
-      <div class="wchip" onclick="openWalletSwitch()"><span id="t-wn">Dompet</span><span style="color:var(--muted);font-size:10px">▾</span></div>
+      <div class="hd-row">
+        <button class="hd-btn" onclick="openSearch()" title="Cari">🔍</button>
+        <button class="hd-btn" onclick="openTransfer()" title="Transfer">↕️</button>
+        <div class="wchip" onclick="openWalletSwitch()" style="background:var(--al);border:1.5px solid var(--accent)"><span id="t-wn" style="color:var(--accent);font-weight:800">Dompet</span><span style="color:var(--accent);font-size:11px;font-weight:800">▾</span></div>
+      </div>
     </div>
     <div style="padding:16px 16px 8px">
       <div class="seg">
@@ -252,7 +256,6 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
   <div class="page" id="pg-budget">
     <div class="hd">
       <div class="hd-title">🎯 Budget</div>
-      <button class="hd-btn" onclick="openBudgetAdd()">＋</button>
     </div>
     <div style="padding:16px 16px 8px">
       <div class="seg">
@@ -261,15 +264,16 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
       </div>
     </div>
     <div id="b-list" style="padding:0 16px 16px"></div>
+    <button class="fab" onclick="openBudgetAdd()">+</button>
   </div>
 
   <!-- TABUNGAN -->
   <div class="page" id="pg-saving">
     <div class="hd">
       <div class="hd-title">🏆 Tabungan</div>
-      <button class="hd-btn" onclick="openSavingAdd()">＋</button>
     </div>
     <div id="sv-list" style="padding:16px;display:flex;flex-direction:column;gap:10px"></div>
+    <button class="fab" onclick="openSavingAdd()">+</button>
   </div>
 
   <!-- SETTINGS -->
@@ -385,6 +389,8 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
   </div>
   <div class="fg"><label class="fl">Target (Rp)</label><div class="pfx"><span>Rp</span><input id="svf-target" type="number" placeholder="1000000" inputmode="numeric"></div></div>
   <div class="fg"><label class="fl">Sudah Terkumpul (Rp)</label><div class="pfx"><span>Rp</span><input id="svf-saved" type="number" placeholder="0" inputmode="numeric"></div></div>
+  <div class="fg"><label class="fl">Deadline <span style="color:var(--muted);font-weight:400;text-transform:none">(opsional)</span></label><input id="svf-deadline" type="date"></div>
+  <div class="fg"><label class="fl">Catatan <span style="color:var(--muted);font-weight:400;text-transform:none">(opsional)</span></label><textarea id="svf-note" placeholder="Untuk apa tabungan ini..."></textarea></div>
   <div id="svf-del" style="display:none"><div class="dvd mt12"></div><button class="btn btn-d mt12" onclick="delSaving()">Hapus Tabungan</button></div>
   <button class="btn btn-p mt16" onclick="saveSaving()">Simpan</button>
 </div></div></div>
@@ -439,7 +445,7 @@ const IN_CATS=[
   {v:'gaji',e:'💼',l:'Gaji'},{v:'freelance',e:'💻',l:'Freelance'},{v:'bisnis',e:'🏪',l:'Bisnis'},
   {v:'investasi',e:'📈',l:'Investasi'},{v:'hadiah',e:'🎁',l:'Hadiah'},{v:'lainnya',e:'💰',l:'Lainnya'}
 ];
-const catInfo=(v,type)=>{const arr=type==='in'?IN_CATS:OUT_CATS;return arr.find(c=>c.v===v)||{e:'💸',l:v}};
+const catInfo=(v,type)=>{if(v==='transfer')return{e:'↕️',l:'Transfer'};const arr=type==='in'?IN_CATS:OUT_CATS;return arr.find(c=>c.v===v)||{e:'💸',l:v}};
 
 function toast(msg,type='i'){
   const el=document.createElement('div');
@@ -503,11 +509,11 @@ async function authSubmit(){
   if(u.length<3){e.textContent='Username minimal 3 karakter';return}
   const btn=document.getElementById('as-btn');btn.style.opacity='0.6';btn.disabled=true;
   try{
-    const ex=await dbG(`rl_users?username=eq.${u}&select=id,username`);
+    const ex=await dbG(`dk_users?username=eq.${u}&select=id,username`);
     if(ex.length){
       await doLogin(ex[0]);
     }else{
-      const[usr]=await dbP('rl_users',{id:nuid(),username:u});
+      const[usr]=await dbP('dk_users',{id:nuid(),username:u});
       await doLogin(usr);
     }
   }catch(err){e.textContent='Gagal: '+err.message;btn.style.opacity='';btn.disabled=false}
@@ -585,7 +591,8 @@ function rHome(){
     return;
   }
   const now=new Date();
-  const moTrx=S.trx.filter(t=>{const d=new Date(t.date);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear()&&(S.wid==='all'||t.wallet_id===S.wid)});
+  const moTrx=S.trx.filter(t=>{const d=new Date(t.date);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear()&&t.wallet_id===S.wid;});
+  const moTrxAll=S.trx.filter(t=>{const d=new Date(t.date);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();});
   const moIn=moTrx.filter(t=>t.type==='in').reduce((a,t)=>a+t.amount,0);
   const moOut=moTrx.filter(t=>t.type==='out').reduce((a,t)=>a+t.amount,0);
 
@@ -609,7 +616,7 @@ function rHome(){
 
   // budget alerts
   const budgetAlerts=S.budgets.map(b=>{
-    const spent=moTrx.filter(t=>t.type==='out'&&t.category===b.category).reduce((a,t)=>a+t.amount,0);
+    const spent=moTrxAll.filter(t=>t.type==='out'&&t.category===b.category).reduce((a,t)=>a+t.amount,0);
     const pct=b.limit?spent/b.limit:0;
     return{...b,spent,pct};
   }).filter(b=>b.pct>=0.7).sort((a,b)=>b.pct-a.pct).slice(0,2);
@@ -666,6 +673,7 @@ function setTrxFilter(f){
 function rTrx(){
   updWalletChips();
   const li=document.getElementById('t-list');
+  const w=gw();
   let data=S.wid?S.trx.filter(t=>t.wallet_id===S.wid):S.trx.slice();
   if(trxFilter==='in')data=data.filter(t=>t.type==='in');
   if(trxFilter==='out')data=data.filter(t=>t.type==='out');
@@ -756,26 +764,42 @@ async function saveTrx(){
   const oldTrx=id?S.trx.find(t=>t.id===id):null;
   const data={user_id:S.user.id,wallet_id:wid,type:curTrxType,amount:amt,category:cat,date:document.getElementById('tf-date').value,note:document.getElementById('tf-note').value.trim()||null};
   try{
-    // update wallet balance
+    // update wallet balance — handle wallet switch saat edit
     const w=S.wallets.find(x=>x.id===wid);
-    if(!w)return;
-    let newBal=w.balance;
-    if(oldTrx){
-      // reverse old
-      if(oldTrx.type==='in')newBal-=oldTrx.amount;
-      else newBal+=oldTrx.amount;
+    if(!w){toast('Dompet tidak ditemukan','e');return;}
+    if(oldTrx&&oldTrx.wallet_id!==wid){
+      // wallet berubah: reverse saldo di wallet lama
+      const wOld=S.wallets.find(x=>x.id===oldTrx.wallet_id);
+      if(wOld){
+        let oldBal=wOld.balance;
+        if(oldTrx.type==='in')oldBal-=oldTrx.amount;
+        else oldBal+=oldTrx.amount;
+        await dbU(`dk_wallets?id=eq.${wOld.id}`,{balance:oldBal});
+        wOld.balance=oldBal;
+      }
+      let newBal=w.balance;
+      if(curTrxType==='in')newBal+=amt;
+      else newBal-=amt;
+      await dbU(`dk_wallets?id=eq.${wid}`,{balance:newBal});
+      w.balance=newBal;
+    }else{
+      let newBal=w.balance;
+      if(oldTrx){
+        if(oldTrx.type==='in')newBal-=oldTrx.amount;
+        else newBal+=oldTrx.amount;
+      }
+      if(curTrxType==='in')newBal+=amt;
+      else newBal-=amt;
+      await dbU(`dk_wallets?id=eq.${wid}`,{balance:newBal});
+      w.balance=newBal;
     }
-    if(curTrxType==='in')newBal+=amt;
-    else newBal-=amt;
     if(id){
       await dbU(`dk_trx?id=eq.${id}`,data);
       const i=S.trx.findIndex(t=>t.id===id);S.trx[i]={...S.trx[i],...data};
     }else{
       const[trx]=await dbP('dk_trx',{...data,id:nuid()});S.trx.unshift(trx);
     }
-    await dbU(`dk_wallets?id=eq.${wid}`,{balance:newBal});
-    w.balance=newBal;
-    csh('sh-tf');toast(id?'Transaksi diperbarui':'Transaksi dicatat','ok');rHome();rTrx();
+    csh('sh-tf');toast(id?'Transaksi diperbarui':'Transaksi dicatat','ok');rHome();rTrx();flashBalance();
   }catch(err){toast('Gagal: '+err.message,'e')}
 }
 async function delTrx(){
@@ -831,7 +855,7 @@ function rBudget(){
         <div class="badge ${pct>=1?'r':pct>=0.7?'gold':'g'}">${(pct*100).toFixed(0)}%</div>
       </div>
       <div class="prog"><div class="prog-f" style="width:${Math.min(pct*100,100).toFixed(0)}%;background:${color}"></div></div>
-      ${pct>=1?`<div style="font-size:11px;color:var(--red);margin-top:6px;font-weight:700">⚠️ Budget terlampaui ${rp(spent-b.limit)}</div>`:''}
+      ${pct>=1?('<div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px"><div style="font-size:11px;color:var(--red);font-weight:700">⚠️ Terlampaui '+rp(spent-b.limit)+'</div><button onclick="event.stopPropagation();openTrxAdd()" style="font-size:11px;font-weight:700;color:var(--accent);padding:4px 10px;border-radius:8px;background:var(--al);border:none;cursor:pointer">+ Catat</button></div>'):''}
     </div>`;
   }).join('');
 }
@@ -901,16 +925,20 @@ function openSavingDetail(id){
   const s=S.savings.find(x=>x.id===id);if(!s)return;
   const pct=s.target?Math.min(s.saved/s.target,1):0;
   document.getElementById('sh-svd-t').textContent=`${s.emoji} ${s.name}`;
+  const deadlineStr=s.deadline?`<div style="font-size:12px;color:var(--muted);margin-top:4px">🗓️ Deadline: ${new Date(s.deadline).toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'})}</div>`:'';
+  const noteStr=s.note?`<div style="margin-top:16px;background:var(--card2);border-radius:12px;padding:12px;font-size:13px;color:var(--text2);line-height:1.6;text-align:left">${s.note}</div>`:'';
   document.getElementById('sh-svd-body').innerHTML=`
-    <div style="text-align:center;padding:16px 0 24px">
+    <div style="text-align:center;padding:16px 0 8px">
       <div style="font-size:48px;margin-bottom:8px">${s.emoji}</div>
       <div style="font-size:28px;font-weight:800;color:var(--gold)">${rp(s.saved)}</div>
       <div style="font-size:13px;color:var(--muted);margin-top:4px">dari target ${rp(s.target)}</div>
       <div class="prog" style="margin:16px 0 8px"><div class="prog-f" style="width:${(pct*100).toFixed(0)}%;background:var(--gold)"></div></div>
       <div style="font-size:13px;font-weight:700;color:var(--gold)">${(pct*100).toFixed(0)}% tercapai</div>
       ${s.saved<s.target?`<div style="font-size:12px;color:var(--muted);margin-top:4px">Sisa ${rp(s.target-s.saved)}</div>`:'<div style="font-size:14px;font-weight:700;color:var(--green);margin-top:8px">🎉 Target tercapai!</div>'}
+      ${deadlineStr}
+      ${noteStr}
     </div>
-    <div style="display:flex;gap:8px">
+    <div style="display:flex;gap:8px;margin-top:8px">
       <button class="btn btn-s" style="flex:1" onclick="openSavingEdit('${s.id}')">Edit</button>
       <button class="btn btn-p" style="flex:1" onclick="openSavingTopup('${s.id}')">+ Tambah</button>
     </div>`;
@@ -948,6 +976,8 @@ function openSavingAdd(){
   document.getElementById('svf-name').value='';
   document.getElementById('svf-target').value='';
   document.getElementById('svf-saved').value='0';
+  document.getElementById('svf-deadline').value='';
+  document.getElementById('svf-note').value='';
   document.getElementById('svf-emoji').value='🎯';
   document.getElementById('svf-del').style.display='none';
   document.getElementById('sh-svf-t').textContent='Tambah Tabungan';
@@ -961,10 +991,13 @@ function openSavingEdit(id){
   document.getElementById('svf-name').value=s.name;
   document.getElementById('svf-target').value=s.target;
   document.getElementById('svf-saved').value=s.saved;
+  document.getElementById('svf-deadline').value=s.deadline||'';
+  document.getElementById('svf-note').value=s.note||'';
   document.getElementById('svf-emoji').value=s.emoji;
   document.getElementById('svf-del').style.display='';
   document.getElementById('sh-svf-t').textContent='Edit Tabungan';
-  document.querySelectorAll('#sh-svf .cat-item').forEach(el=>el.classList.toggle('on',el.onclick?.toString().includes(`'${s.emoji}'`)));
+  document.getElementById('svf-emoji').value=s.emoji;
+  document.querySelectorAll('#sh-svf .cat-item').forEach(el=>el.classList.toggle('on',el.getAttribute('onclick')?.includes(`'${s.emoji}'`)));
   osh('sh-svf');
 }
 function pickSavEmoji(e){
@@ -977,7 +1010,7 @@ async function saveSaving(){
   const target=parseFloat(document.getElementById('svf-target').value);
   if(!target||target<=0){toast('Target wajib diisi','e');return}
   const id=document.getElementById('svf-id').value;
-  const data={user_id:S.user.id,name,emoji:document.getElementById('svf-emoji').value||'🎯',target,saved:parseFloat(document.getElementById('svf-saved').value)||0};
+  const data={user_id:S.user.id,name,emoji:document.getElementById('svf-emoji').value||'🎯',target,saved:parseFloat(document.getElementById('svf-saved').value)||0,deadline:document.getElementById('svf-deadline').value||null,note:document.getElementById('svf-note').value.trim()||null};
   try{
     if(id){await dbU(`dk_savings?id=eq.${id}`,data);const i=S.savings.findIndex(s=>s.id===id);S.savings[i]={...S.savings[i],...data}}
     else{const[s]=await dbP('dk_savings',{...data,id:nuid()});S.savings.push(s)}
@@ -1033,12 +1066,17 @@ async function saveWallet(){
 }
 async function delWallet(){
   const id=document.getElementById('wf-id').value;
-  confirmSheet('Hapus dompet ini?','Transaksi terkait tidak ikut terhapus.',async()=>{
+  confirmSheet('Hapus dompet ini?','Semua transaksi di dompet ini juga akan dihapus.',async()=>{
     try{
-      await dbU(`dk_wallets?id=eq.${id}`,{deleted_at:new Date().toISOString()});
+      const now2=new Date().toISOString();
+      await Promise.all([
+        dbU(`dk_wallets?id=eq.${id}`,{deleted_at:now2}),
+        dbU(`dk_trx?wallet_id=eq.${id}`,{deleted_at:now2}),
+      ]);
       S.wallets=S.wallets.filter(w=>w.id!==id);
+      S.trx=S.trx.filter(t=>t.wallet_id!==id);
       if(S.wid===id)S.wid=S.wallets[0]?.id||null;
-      csh('sh-wf');toast('Dompet dihapus','ok');rSet();rHome();
+      csh('sh-wf');toast('Dompet dihapus','ok');rSet();rHome();rTrx();
     }catch(err){toast('Gagal: '+err.message,'e')}
   });
 }
@@ -1093,11 +1131,16 @@ function rSet(){
       <div class="li-ico g">${w.emoji||'💵'}</div>
       <div class="li-body"><div class="li-title">${w.name}</div><div class="li-sub">${rp(w.balance)}</div></div>
       <span style="color:var(--muted)">›</span></div>`).join('');
+  const todayDay=new Date().getDate();
   document.getElementById('set-routine').innerHTML=!S.routines.length?`<div style="color:var(--muted);font-size:13px;padding:8px 0">Belum ada transaksi rutin</div>`:
-    S.routines.map(r=>`<div class="li" style="cursor:pointer" onclick="openRoutineEdit('${r.id}')">
-      <div class="li-ico ${r.type==='in'?'g':'r'}">${r.type==='in'?'💰':'💸'}</div>
-      <div class="li-body"><div class="li-title">${r.name}</div><div class="li-sub">Tgl ${r.day} tiap bulan · ${rp(r.amount)}</div></div>
-      <span style="color:var(--muted)">›</span></div>`).join('');
+    S.routines.map(r=>{
+      const isDue=r.day===todayDay;
+      return`<div class="li">
+        <div class="li-ico ${r.type==='in'?'g':'r'}" style="cursor:pointer" onclick="openRoutineEdit('${r.id}')">${r.type==='in'?'💰':'💸'}</div>
+        <div class="li-body" style="cursor:pointer" onclick="openRoutineEdit('${r.id}')"><div class="li-title">${r.name}</div><div class="li-sub">Tgl ${r.day} tiap bulan · ${rp(r.amount)}</div></div>
+        <button id="rb-apply-${r.id}" onclick="applyRoutine('${r.id}')" style="font-size:11px;font-weight:700;padding:6px 12px;border-radius:8px;border:none;cursor:pointer;background:${isDue?'var(--accent)':'var(--card2)'};color:${isDue?'#0d0d0d':'var(--muted)'}">Terapkan</button>
+      </div>`;
+    }).join('');
   document.getElementById('dark-tog').checked=document.documentElement.getAttribute('data-theme')==='dark';
 }
 function openRoutineEdit(id){
@@ -1115,11 +1158,124 @@ function openRoutineEdit(id){
   osh('sh-rf');
 }
 
+
+// ── TRANSFER ──────────────────────────────────────────
+function openTransfer(){
+  if(S.wallets.length<2){toast('Butuh minimal 2 dompet untuk transfer','e');return}
+  const opts=S.wallets.map(w=>`<option value="${w.id}">${w.emoji} ${w.name} — ${rp(w.balance)}</option>`).join('');
+  document.getElementById('tr-from').innerHTML=opts;
+  document.getElementById('tr-to').innerHTML=opts;
+  document.getElementById('tr-from').value=S.wid||S.wallets[0].id;
+  document.getElementById('tr-to').value=S.wallets.find(w=>w.id!==S.wid)?.id||S.wallets[1].id;
+  document.getElementById('tr-amt').value='';
+  document.getElementById('tr-note').value='';
+  document.getElementById('tr-date').value=todayD();
+  osh('sh-tr');
+}
+async function saveTransfer(){
+  const fromId=document.getElementById('tr-from').value;
+  const toId=document.getElementById('tr-to').value;
+  if(fromId===toId){toast('Pilih dompet yang berbeda','e');return}
+  const amt=parseFloat(document.getElementById('tr-amt').value);
+  if(!amt||amt<=0){toast('Jumlah wajib diisi','e');return}
+  const wFrom=S.wallets.find(w=>w.id===fromId);
+  const wTo=S.wallets.find(w=>w.id===toId);
+  if(!wFrom||!wTo)return;
+  if(wFrom.balance<amt){toast('Saldo tidak cukup','e');return}
+  const date=document.getElementById('tr-date').value;
+  const note=document.getElementById('tr-note').value.trim()||null;
+  try{
+    const newFromBal=wFrom.balance-amt;
+    const newToBal=wTo.balance+amt;
+    const trxOut={id:nuid(),user_id:S.user.id,wallet_id:fromId,type:'out',amount:amt,category:'transfer',date,note:note?`Transfer ke ${wTo.name}${note?' · '+note:''}`:(`Transfer ke ${wTo.name}`),to_wallet_id:toId};
+    const trxIn={id:nuid(),user_id:S.user.id,wallet_id:toId,type:'in',amount:amt,category:'transfer',date,note:note?`Transfer dari ${wFrom.name}${note?' · '+note:''}`:(`Transfer dari ${wFrom.name}`),to_wallet_id:fromId};
+    await Promise.all([
+      dbP('dk_trx',trxOut),dbP('dk_trx',trxIn),
+      dbU(`dk_wallets?id=eq.${fromId}`,{balance:newFromBal}),
+      dbU(`dk_wallets?id=eq.${toId}`,{balance:newToBal}),
+    ]);
+    wFrom.balance=newFromBal;wTo.balance=newToBal;
+    S.trx.unshift(trxIn,trxOut);
+    csh('sh-tr');toast(`Transferred ${rp(amt)} ke ${wTo.name} ✓`,'ok');
+    rHome();rTrx();
+  }catch(err){toast('Gagal: '+err.message,'e')}
+}
+
+// ── SEARCH ────────────────────────────────────────────
+function openSearch(){
+  document.getElementById('srch-q').value='';
+  document.getElementById('srch-res').innerHTML='';
+  osh('sh-srch');
+  setTimeout(()=>document.getElementById('srch-q').focus(),350);
+}
+function doSearch(){
+  const q=document.getElementById('srch-q').value.trim().toLowerCase();
+  const el=document.getElementById('srch-res');
+  if(!q){el.innerHTML='';return}
+  const results=S.trx.filter(t=>{
+    const ci=catInfo(t.category,t.type);
+    return ci.l.toLowerCase().includes(q)||
+      (t.note&&t.note.toLowerCase().includes(q))||
+      (t.category&&t.category.toLowerCase().includes(q));
+  }).slice(0,30);
+  if(!results.length){el.innerHTML=`<div style="color:var(--muted);font-size:13px;text-align:center;padding:24px 0">Tidak ada hasil untuk "${q}"</div>`;return}
+  el.innerHTML=results.map(t=>trxLI(t)).join('');
+}
+
+// ── EXPORT ────────────────────────────────────────────
+function exportRingkasan(){
+  const now=new Date();
+  const moTrx=S.trx.filter(t=>{const d=new Date(t.date);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();});
+  const moIn=moTrx.filter(t=>t.type==='in').reduce((a,t)=>a+t.amount,0);
+  const moOut=moTrx.filter(t=>t.type==='out').reduce((a,t)=>a+t.amount,0);
+  const bycat={};
+  moTrx.filter(t=>t.type==='out'&&t.category!=='transfer').forEach(t=>{
+    if(!bycat[t.category])bycat[t.category]=0;
+    bycat[t.category]+=t.amount;
+  });
+  const bulan=now.toLocaleDateString('id-ID',{month:'long',year:'numeric'});
+  const walletLines=S.wallets.map(w=>`  ${w.emoji} ${w.name}: ${rp(w.balance)}`).join('\n');
+  const catLines=Object.entries(bycat).sort((a,b)=>b[1]-a[1]).map(([k,v])=>{const ci=catInfo(k,'out');return`  ${ci.e} ${ci.l}: ${rp(v)}`;}).join('\n');
+  const text=`📊 Ringkasan Duitku — ${bulan}\n\n`+
+    `💰 Pemasukan: ${rp(moIn)}\n`+
+    `💸 Pengeluaran: ${rp(moOut)}\n`+
+    `📈 Selisih: ${rp(moIn-moOut)}\n\n`+
+    `💳 Saldo Dompet:\n${walletLines}\n\n`+
+    (catLines?`📂 Pengeluaran per Kategori:\n${catLines}\n\n`:'')+
+    `Total transaksi bulan ini: ${moTrx.length}`;
+  navigator.clipboard.writeText(text).then(()=>toast('Ringkasan disalin! 📋','ok')).catch(()=>toast('Gagal salin','e'));
+}
+
+// ── ROUTINE AUTO-APPLY ────────────────────────────────
+async function applyRoutine(id){
+  const r=S.routines.find(x=>x.id===id);if(!r)return;
+  const w=S.wallets.find(x=>x.id===r.wallet_id);
+  if(!w){toast('Dompet rutin tidak ditemukan','e');return}
+  const btn=document.getElementById('rb-apply-'+id);
+  if(btn){btn.style.opacity='0.6';btn.disabled=true;}
+  try{
+    const newBal=r.type==='in'?w.balance+r.amount:w.balance-r.amount;
+    const trxData={id:nuid(),user_id:S.user.id,wallet_id:r.wallet_id,type:r.type,amount:r.amount,category:r.type==='in'?'gaji':'tagihan',date:todayD(),note:r.name};
+    const[trx]=await dbP('dk_trx',trxData);
+    await dbU(`dk_wallets?id=eq.${r.wallet_id}`,{balance:newBal});
+    w.balance=newBal;S.trx.unshift(trx);
+    toast(`${r.name} diterapkan ✓`,'ok');rSet();rHome();rTrx();
+  }catch(err){toast('Gagal: '+err.message,'e');if(btn){btn.style.opacity='';btn.disabled=false;}}
+}
+
+// ── BALANCE FLASH ─────────────────────────────────────
+function flashBalance(){
+  const el=document.querySelector('#h-balance [style*="font-size:32px"]');
+  if(!el)return;
+  el.style.transition='color .15s';
+  el.style.color='#fff';
+  setTimeout(()=>{el.style.color='';},600);
+}
 // ── INIT ──────────────────────────────────────────────
 async function init(){
   initTheme();
   // Warm up Vercel function
-  fetch(`${API}/api/db/rl_users?select=id&username=eq.__warmup__`).catch(()=>{});
+  fetch(`${API}/api/db/dk_users?select=id&limit=1`).catch(()=>{});
   const sess=localStorage.getItem('dk_sess');
   if(sess){
     try{S.user=JSON.parse(sess);await loadAll();document.getElementById('auth-page').classList.remove('active');document.getElementById('app').style.display='flex';navTo('home')}
@@ -1129,5 +1285,21 @@ async function init(){
 }
 init();
 </script>
+
+<!-- Transfer Sheet -->
+<div class="ovl" id="sh-tr"><div class="sheet" onclick="event.stopPropagation()"><div class="sh-handle"></div><div class="sh-hd"><div class="sh-title">↕️ Transfer</div><button class="sh-close" onclick="csh('sh-tr')">✕</button></div><div class="sh-body">
+  <div class="fg"><label class="fl">Dari Dompet</label><select id="tr-from"></select></div>
+  <div class="fg"><label class="fl">Ke Dompet</label><select id="tr-to"></select></div>
+  <div class="fg"><label class="fl">Jumlah (Rp)</label><div class="pfx"><span>Rp</span><input id="tr-amt" type="number" placeholder="100000" inputmode="numeric"></div></div>
+  <div class="fg"><label class="fl">Tanggal</label><input id="tr-date" type="date"></div>
+  <div class="fg"><label class="fl">Catatan <span style="color:var(--muted);font-weight:400;text-transform:none">(opsional)</span></label><input id="tr-note" type="text" placeholder="cth: Top up Dana"></div>
+  <button class="btn btn-p mt16" onclick="saveTransfer()">Transfer</button>
+</div></div></div>
+
+<!-- Search Sheet -->
+<div class="ovl" id="sh-srch"><div class="sheet" style="max-height:92vh" onclick="event.stopPropagation()"><div class="sh-handle"></div><div class="sh-hd"><div class="sh-title">🔍 Cari Transaksi</div><button class="sh-close" onclick="csh('sh-srch')">✕</button></div><div class="sh-body">
+  <div class="fg"><input id="srch-q" type="text" placeholder="Nama, kategori, catatan..." oninput="doSearch()"></div>
+  <div id="srch-res"></div>
+</div></div></div>
 </body>
 </html>
