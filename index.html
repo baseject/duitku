@@ -457,6 +457,7 @@ const IN_CATS=[
   {v:'investasi',e:'📈',l:'Investasi'},{v:'hadiah',e:'🎁',l:'Hadiah'},{v:'lainnya',e:'💰',l:'Lainnya'}
 ];
 const catInfo=(v,type)=>{if(v==='transfer')return{e:'↕️',l:'Transfer'};const arr=type==='in'?IN_CATS:OUT_CATS;return arr.find(c=>c.v===v)||{e:'💸',l:v}};
+const esc=(s)=>s==null?'':String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 
 function toast(msg,type='i'){
   const el=document.createElement('div');
@@ -744,11 +745,11 @@ function trxLI(t){
   const isTransfer=t.category==='transfer';
   const valColor=isTransfer?'var(--muted)':t.type==='in'?'var(--green)':'var(--red)';
   const valPrefix=isTransfer?(t.type==='out'?'→':'←'):t.type==='in'?'+':'-';
-  return`<div class="li" style="cursor:pointer" onclick="openTrxEdit('${t.id}')">
+  return`<div class="li" style="cursor:pointer" onclick="openTrxEdit('${esc(t.id)}')">
     <div class="li-ico ${isTransfer?'x':t.type==='in'?'g':'r'}">${ci.e}</div>
     <div class="li-body">
-      <div class="li-title">${ci.l}${t.note?` · ${t.note}`:''}</div>
-      <div class="li-sub">${w?.name||'—'} · ${fmtDS(t.date)}</div>
+      <div class="li-title">${esc(ci.l)}${t.note?` · ${esc(t.note)}`:''}</div>
+      <div class="li-sub">${esc(w?.name||'—')} · ${fmtDS(t.date)}</div>
     </div>
     <div class="li-right">
       <div class="li-val" style="color:${valColor}">${valPrefix}${rp(t.amount)}</div>
@@ -868,9 +869,12 @@ async function saveTrx(){
     }
     if(id){
       await dbU(`dk_trx?id=eq.${id}`,data);
-      const i=S.trx.findIndex(t=>t.id===id);S.trx[i]={...S.trx[i],...data};
+      const i=S.trx.findIndex(t=>t.id===id);if(i!==-1)S.trx[i]={...S.trx[i],...data};
     }else{
-      const[trx]=await dbP('dk_trx',{...data,id:nuid()});S.trx.unshift(trx);
+      const newId=nuid();
+      const res=await dbP('dk_trx',{...data,id:newId});
+      const trx=(Array.isArray(res)&&res.length)?res[0]:{...data,id:newId};
+      S.trx.unshift(trx);
     }
     csh('sh-tf');toast(id?'Transaksi diperbarui':'Transaksi dicatat','ok');rHome();rTrx();flashBalance();
   }catch(err){toast('Gagal: '+err.message,'e')}
@@ -878,13 +882,14 @@ async function saveTrx(){
 async function delTrx(){
   const id=document.getElementById('tf-id').value;
   const t=S.trx.find(x=>x.id===id);
+  if(!t){toast('Transaksi tidak ditemukan','e');return;}
   const isTransfer=t?.category==='transfer';
   const msg=isTransfer?'Kedua sisi transfer akan dihapus dan saldo disesuaikan.':'Saldo dompet akan disesuaikan.';
   confirmSheet('Hapus transaksi ini?',msg,async()=>{
     try{
-      const now2=new Date().toISOString();
+      const deletedAt=new Date().toISOString();
       // Reverse saldo wallet utama
-      const w=S.wallets.find(x=>x.id===t?.wallet_id);
+      const w=S.wallets.find(x=>x.id===t.wallet_id);
       if(w){
         let newBal=w.balance;
         if(t.type==='in')newBal-=t.amount;
@@ -896,22 +901,20 @@ async function delTrx(){
       if(isTransfer&&t.to_wallet_id){
         const wPair=S.wallets.find(x=>x.id===t.to_wallet_id);
         if(wPair){
-          // Wallet pasangan menerima kebalikan dari transaksi ini
-          // Jika t.type==='out' (keluar dari w), maka pasangan menerima 'in' → reverse: kurangi
           let pairBal=wPair.balance;
           if(t.type==='out')pairBal-=t.amount; // reverse penerimaan di pasangan
           else pairBal+=t.amount;
           await dbU(`dk_wallets?id=eq.${wPair.id}`,{balance:pairBal});
           wPair.balance=pairBal;
         }
-        // Hapus transaksi pasangan (yang punya to_wallet_id === wallet ini)
+        // Hapus transaksi pasangan
         const pairTrx=S.trx.find(x=>x.id!==id&&x.category==='transfer'&&x.to_wallet_id===t.wallet_id&&x.wallet_id===t.to_wallet_id&&x.amount===t.amount&&x.date===t.date);
         if(pairTrx){
-          await dbU(`dk_trx?id=eq.${pairTrx.id}`,{deleted_at:now2});
+          await dbU(`dk_trx?id=eq.${pairTrx.id}`,{deleted_at:deletedAt});
           S.trx=S.trx.filter(x=>x.id!==pairTrx.id);
         }
       }
-      await dbU(`dk_trx?id=eq.${id}`,{deleted_at:now2});
+      await dbU(`dk_trx?id=eq.${id}`,{deleted_at:deletedAt});
       S.trx=S.trx.filter(x=>x.id!==id);
       csh('sh-tf');toast('Transaksi dihapus','ok');rHome();rTrx();
     }catch(err){toast('Gagal: '+err.message,'e')}
@@ -988,8 +991,8 @@ async function saveBudget(){
   if(!id&&S.budgets.find(b=>b.category===cat)){toast('Budget kategori ini sudah ada','e');return}
   const data={user_id:S.user.id,category:cat,limit};
   try{
-    if(id){await dbU(`dk_budgets?id=eq.${id}`,data);const i=S.budgets.findIndex(b=>b.id===id);S.budgets[i]={...S.budgets[i],...data}}
-    else{const[b]=await dbP('dk_budgets',{...data,id:nuid()});S.budgets.push(b)}
+    if(id){await dbU(`dk_budgets?id=eq.${id}`,data);const i=S.budgets.findIndex(b=>b.id===id);if(i!==-1)S.budgets[i]={...S.budgets[i],...data}}
+    else{const newId=nuid();const res=await dbP('dk_budgets',{...data,id:newId});const b=(Array.isArray(res)&&res.length)?res[0]:{...data,id:newId};S.budgets.push(b)}
     csh('sh-bf');toast(id?'Budget diperbarui':'Budget ditambahkan','ok');rBudget();rHome();
   }catch(err){toast('Gagal: '+err.message,'e')}
 }
@@ -1016,10 +1019,10 @@ function rSaving(){
     const deadlineDays=s.deadline?Math.ceil((new Date(s.deadline)-now)/864e5):null;
     const deadlineWarn=!done&&deadlineDays!==null&&deadlineDays<=30;
     const deadlineLabel=deadlineDays!==null?(deadlineDays<0?`⚠️ Telat ${Math.abs(deadlineDays)}hr`:deadlineDays===0?'⚠️ Hari ini!':`🗓️ ${deadlineDays}hr lagi`):null;
-    return`<div class="sav-card" onclick="openSavingDetail('${s.id}')">
+    return`<div class="sav-card" onclick="openSavingDetail('${esc(s.id)}')">
       <div class="sav-top">
         <div>
-          <div class="sav-name">${s.name}</div>
+          <div class="sav-name">${esc(s.name)}</div>
           <div class="sav-target">Target: ${rp(s.target)}</div>
           ${deadlineLabel?`<div style="font-size:11px;font-weight:700;color:${deadlineDays<0||deadlineDays===0?'var(--red)':'var(--gold)'};margin-top:2px">${deadlineLabel}</div>`:''}
         </div>
@@ -1131,8 +1134,8 @@ async function saveSaving(){
   const id=document.getElementById('svf-id').value;
   const data={user_id:S.user.id,name,emoji:document.getElementById('svf-emoji').value||'🎯',target,saved,deadline:document.getElementById('svf-deadline').value||null,note:document.getElementById('svf-note').value.trim()||null};
   try{
-    if(id){await dbU(`dk_savings?id=eq.${id}`,data);const i=S.savings.findIndex(s=>s.id===id);S.savings[i]={...S.savings[i],...data}}
-    else{const[s]=await dbP('dk_savings',{...data,id:nuid()});S.savings.push(s)}
+    if(id){await dbU(`dk_savings?id=eq.${id}`,data);const i=S.savings.findIndex(s=>s.id===id);if(i!==-1)S.savings[i]={...S.savings[i],...data}}
+    else{const newId=nuid();const res=await dbP('dk_savings',{...data,id:newId});const s=(Array.isArray(res)&&res.length)?res[0]:{...data,id:newId};S.savings.push(s)}
     csh('sh-svf');toast(id?'Tabungan diperbarui':'Tabungan ditambahkan','ok');rSaving();rHome();
   }catch(err){toast('Gagal: '+err.message,'e')}
 }
@@ -1181,8 +1184,8 @@ async function saveWallet(){
   const balance=balField!==''?parseFloat(balField)||0:existingBal;
   const data={name,emoji,balance,user_id:S.user.id};
   try{
-    if(id){await dbU(`dk_wallets?id=eq.${id}`,data);const i=S.wallets.findIndex(w=>w.id===id);S.wallets[i]={...S.wallets[i],...data}}
-    else{const[w]=await dbP('dk_wallets',{...data,id:nuid()});S.wallets.push(w);if(!S.wid)S.wid=w.id}
+    if(id){await dbU(`dk_wallets?id=eq.${id}`,data);const i=S.wallets.findIndex(w=>w.id===id);if(i!==-1)S.wallets[i]={...S.wallets[i],...data}}
+    else{const newId=nuid();const res=await dbP('dk_wallets',{...data,id:newId});const w=(Array.isArray(res)&&res.length)?res[0]:{...data,id:newId};S.wallets.push(w);if(!S.wid)S.wid=w.id}
     csh('sh-wf');toast(id?'Dompet diperbarui':'Dompet ditambahkan','ok');rSet();rHome();
   }catch(err){toast('Gagal: '+err.message,'e')}
 }
@@ -1232,8 +1235,8 @@ async function saveRoutine(){
   const id=document.getElementById('rf-id').value;
   const data={user_id:S.user.id,name,type:curRoutineType,amount:amt,day,wallet_id:document.getElementById('rf-wallet').value};
   try{
-    if(id){await dbU(`dk_routines?id=eq.${id}`,data);const i=S.routines.findIndex(r=>r.id===id);S.routines[i]={...S.routines[i],...data}}
-    else{const[r]=await dbP('dk_routines',{...data,id:nuid()});S.routines.push(r)}
+    if(id){await dbU(`dk_routines?id=eq.${id}`,data);const i=S.routines.findIndex(r=>r.id===id);if(i!==-1)S.routines[i]={...S.routines[i],...data}}
+    else{const newId=nuid();const res=await dbP('dk_routines',{...data,id:newId});const r=(Array.isArray(res)&&res.length)?res[0]:{...data,id:newId};S.routines.push(r)}
     csh('sh-rf');toast(id?'Rutin diperbarui':'Rutin ditambahkan','ok');rSet();
   }catch(err){toast('Gagal: '+err.message,'e')}
 }
@@ -1251,18 +1254,18 @@ async function delRoutine(){
 function rSet(){
   document.getElementById('set-user').textContent=S.user?.username||'';
   document.getElementById('set-wallets').innerHTML=!S.wallets.length?`<div style="color:var(--muted);font-size:13px;padding:8px 0">Belum ada dompet</div>`:
-    S.wallets.map(w=>`<div class="li" style="cursor:pointer" onclick="openWalletEdit('${w.id}')">
-      <div class="li-ico g">${w.emoji||'💵'}</div>
-      <div class="li-body"><div class="li-title">${w.name}</div><div class="li-sub">${rp(w.balance)}</div></div>
+    S.wallets.map(w=>`<div class="li" style="cursor:pointer" onclick="openWalletEdit('${esc(w.id)}')">
+      <div class="li-ico g">${esc(w.emoji||'💵')}</div>
+      <div class="li-body"><div class="li-title">${esc(w.name)}</div><div class="li-sub">${rp(w.balance)}</div></div>
       <span style="color:var(--muted)">›</span></div>`).join('');
   const todayDay=new Date().getDate();
   document.getElementById('set-routine').innerHTML=!S.routines.length?`<div style="color:var(--muted);font-size:13px;padding:8px 0">Belum ada transaksi rutin</div>`:
     S.routines.map(r=>{
       const isDue=r.day===todayDay;
       return`<div class="li">
-        <div class="li-ico ${r.type==='in'?'g':'r'}" style="cursor:pointer" onclick="openRoutineEdit('${r.id}')">${r.type==='in'?'💰':'💸'}</div>
-        <div class="li-body" style="cursor:pointer" onclick="openRoutineEdit('${r.id}')"><div class="li-title">${r.name}</div><div class="li-sub">Tgl ${r.day} tiap bulan · ${rp(r.amount)}</div></div>
-        <button id="rb-apply-${r.id}" onclick="applyRoutine('${r.id}')" style="font-size:11px;font-weight:700;padding:6px 12px;border-radius:8px;border:none;cursor:pointer;background:${isDue?'var(--accent)':'var(--card2)'};color:${isDue?'#0d0d0d':'var(--muted)'};font-family:'Plus Jakarta Sans',sans-serif;flex-shrink:0">Terapkan</button>
+        <div class="li-ico ${r.type==='in'?'g':'r'}" style="cursor:pointer" onclick="openRoutineEdit('${esc(r.id)}')">${r.type==='in'?'💰':'💸'}</div>
+        <div class="li-body" style="cursor:pointer" onclick="openRoutineEdit('${esc(r.id)}')"><div class="li-title">${esc(r.name)}</div><div class="li-sub">Tgl ${r.day} tiap bulan · ${rp(r.amount)}</div></div>
+        <button id="rb-apply-${esc(r.id)}" onclick="applyRoutine('${esc(r.id)}')" style="font-size:11px;font-weight:700;padding:6px 12px;border-radius:8px;border:none;cursor:pointer;background:${isDue?'var(--accent)':'var(--card2)'};color:${isDue?'#0d0d0d':'var(--muted)'};font-family:'Plus Jakarta Sans',sans-serif;flex-shrink:0">Terapkan</button>
       </div>`;
     }).join('');
   document.getElementById('dark-tog').checked=document.documentElement.getAttribute('data-theme')==='dark';
@@ -1391,8 +1394,10 @@ async function applyRoutine(id){
   if(btn){btn.style.opacity='0.6';btn.disabled=true;}
   try{
     const newBal=r.type==='in'?w.balance+r.amount:w.balance-r.amount;
-    const trxData={id:nuid(),user_id:S.user.id,wallet_id:r.wallet_id,type:r.type,amount:r.amount,category:'lainnya',date:todayD(),note:r.name};
-    const[trx]=await dbP('dk_trx',trxData);
+    const trxId=nuid();
+    const trxData={id:trxId,user_id:S.user.id,wallet_id:r.wallet_id,type:r.type,amount:r.amount,category:'lainnya',date:todayD(),note:r.name};
+    const res=await dbP('dk_trx',trxData);
+    const trx=(Array.isArray(res)&&res.length)?res[0]:trxData;
     await dbU(`dk_wallets?id=eq.${r.wallet_id}`,{balance:newBal});
     w.balance=newBal;S.trx.unshift(trx);
     toast(`${r.name} diterapkan ✓`,'ok');rSet();rHome();rTrx();
