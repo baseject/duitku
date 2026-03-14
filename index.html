@@ -530,7 +530,17 @@ async function authSubmit(){
     if(ex.length){
       await doLogin(ex[0]);
     }else{
-      const[usr]=await dbP('dk_users',{id:nuid(),username:u});
+      // Insert user baru
+      const newId=nuid();
+      const inserted=await dbP('dk_users',{id:newId,username:u});
+      // Kalau API return data langsung, pakai itu. Kalau tidak, fetch ulang.
+      let usr=Array.isArray(inserted)&&inserted.length?inserted[0]:null;
+      if(!usr||!usr.id){
+        // Fetch ulang untuk pastikan user sudah tersimpan di DB
+        const refetch=await dbG(`dk_users?username=eq.${u}&select=id,username`);
+        if(!refetch.length) throw new Error('Gagal membuat akun, coba lagi');
+        usr=refetch[0];
+      }
       await doLogin(usr);
     }
   }catch(err){e.textContent='Gagal: '+err.message;btn.style.opacity='';btn.disabled=false}
@@ -564,7 +574,14 @@ async function loadAll(){
   ]);
   S.budgets=budgets;S.savings=savings;S.routines=routines;
   if(!wallets.length){
-    const[w]=await dbP('dk_wallets',{id:nuid(),user_id:S.user.id,name:'Kas',emoji:'💵',balance:0});
+    const walletId=nuid();
+    const inserted=await dbP('dk_wallets',{id:walletId,user_id:S.user.id,name:'Kas',emoji:'💵',balance:0});
+    let w=Array.isArray(inserted)&&inserted.length?inserted[0]:null;
+    if(!w||!w.id){
+      // Fetch ulang kalau API tidak return data
+      const refetch=await dbG(`dk_wallets?id=eq.${walletId}&user_id=eq.${uid}&deleted_at=is.null`);
+      w=refetch.length?refetch[0]:{id:walletId,user_id:uid,name:'Kas',emoji:'💵',balance:0};
+    }
     S.wallets=[w];S.wid=w.id;
   }else{
     S.wallets=wallets;
