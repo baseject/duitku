@@ -505,12 +505,13 @@ function saveCats(){
 loadCats();
 const catInfo=(v,type)=>{if(v==='transfer')return{e:'↕️',l:'Transfer'};const arr=type==='in'?IN_CATS:OUT_CATS;return arr.find(c=>c.v===v)||{e:'💸',l:v}};
 const esc=(s)=>s==null?'':String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+const toNum=(n)=>{if(n==null||n===''||n===undefined)return 0;const v=Number(n);return isNaN(v)||!isFinite(v)?0:v};
 
 function toast(msg,type='i'){
   const el=document.createElement('div');
   const bg=type==='e'?'var(--red)':type==='ok'?'var(--green)':'var(--text)';
   const col=type==='i'?'var(--bg)':'#fff';
-  el.style.cssText=`position:fixed;top:max(env(safe-area-inset-top),16px);left:50%;transform:translateX(-50%);background:${bg};color:${col};padding:10px 20px;border-radius:20px;font-size:13px;font-weight:700;z-index:9999;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.3);transition:.3s;font-family:'Plus Jakarta Sans',sans-serif`;
+  el.style.cssText=`position:fixed;top:max(env(safe-area-inset-top),16px);left:50%;transform:translateX(-50%);background:${bg};color:${col};padding:10px 20px;border-radius:20px;font-size:13px;font-weight:700;z-index:9999;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.3);transition:.3s;font-family:'DM Sans',sans-serif`;
   el.textContent=msg;document.body.appendChild(el);
   setTimeout(()=>{el.style.opacity='0';setTimeout(()=>el.remove(),300)},2200);
 }
@@ -621,18 +622,25 @@ async function loadAll(){
     dbG(`dk_routines?user_id=eq.${uid}&deleted_at=is.null`)
   ]);
   S.budgets=budgets;S.savings=savings;S.routines=routines;
+  // Normalize numeric fields from DB (could come as strings)
+  const normWallet=w=>({...w,balance:toNum(w.balance)});
+  const normSaving=s=>({...s,target:toNum(s.target),saved:toNum(s.saved)});
+  const normBudget=b=>({...b,limit:toNum(b.limit)});
+  const normRoutine=r=>({...r,amount:toNum(r.amount)});
+  S.budgets=budgets.map(normBudget);
+  S.savings=savings.map(normSaving);
+  S.routines=routines.map(normRoutine);
   if(!wallets.length){
     const walletId=nuid();
     const inserted=await dbP('dk_wallets',{id:walletId,user_id:S.user.id,name:'Kas',emoji:'💵',balance:0});
     let w=Array.isArray(inserted)&&inserted.length?inserted[0]:null;
     if(!w||!w.id){
-      // Fetch ulang kalau API tidak return data
       const refetch=await dbG(`dk_wallets?id=eq.${walletId}&user_id=eq.${uid}&deleted_at=is.null`);
       w=refetch.length?refetch[0]:{id:walletId,user_id:uid,name:'Kas',emoji:'💵',balance:0};
     }
-    S.wallets=[w];S.wid=w.id;
+    S.wallets=[normWallet(w)];S.wid=w.id;
   }else{
-    S.wallets=wallets;
+    S.wallets=wallets.map(normWallet);
     const saved=localStorage.getItem('dk_wid');
     S.wid=wallets.find(w=>w.id===saved)?saved:wallets[0].id;
   }
@@ -640,7 +648,8 @@ async function loadAll(){
 }
 async function loadTrx(){
   if(!S.user)return;
-  S.trx=await dbG(`dk_trx?user_id=eq.${S.user.id}&deleted_at=is.null&order=date.desc&limit=200`);
+  const raw=await dbG(`dk_trx?user_id=eq.${S.user.id}&deleted_at=is.null&order=date.desc&limit=200`);
+  S.trx=raw.map(t=>({...t,amount:toNum(t.amount)}));
 }
 
 // ── WALLET SWITCH ─────────────────────────────────────
@@ -649,9 +658,9 @@ function openWalletSwitch(){
   const totalBal=S.wallets.reduce((a,w)=>a+toNum(w.balance),0);
   const totalHtml=S.wallets.length>1?`<div style="background:var(--al);border-radius:12px;padding:10px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;font-weight:700;color:var(--muted)">Total Semua Dompet</span><span style="font-size:14px;font-weight:800;color:var(--accent)">${rp(totalBal)}</span></div>`:'';
   li.innerHTML=!S.wallets.length?`<div class="empty"><div class="empty-ico">💳</div><div class="empty-title">Belum ada dompet</div></div>`:
-    totalHtml+S.wallets.map(w=>`<div class="w-item" onclick="switchWallet('${w.id}')">
-      <div class="w-ico" style="background:var(--gl)">${w.emoji||'💵'}</div>
-      <div style="flex:1"><div style="font-weight:700;font-size:14px">${w.name}</div><div style="font-size:12px;color:var(--muted)">${rp(w.balance)}</div></div>
+    totalHtml+S.wallets.map(w=>`<div class="w-item" onclick="switchWallet('${esc(w.id)}')">
+      <div class="w-ico" style="background:var(--gl)">${esc(w.emoji||'💵')}</div>
+      <div style="flex:1"><div style="font-weight:700;font-size:14px">${esc(w.name)}</div><div style="font-size:12px;color:var(--muted)">${rp(w.balance)}</div></div>
       ${w.id===S.wid?'<span style="color:var(--accent);font-size:18px">✓</span>':''}
     </div>`).join('');
   osh('sh-wsw');
@@ -678,14 +687,14 @@ function rHome(){
   const now=new Date();
   const moTrx=S.trx.filter(t=>{const d=new Date(t.date);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear()&&t.wallet_id===S.wid;});
   const moTrxAll=S.trx.filter(t=>{const d=new Date(t.date);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();});
-  const moIn=moTrx.filter(t=>t.type==='in'&&t.category!=='transfer').reduce((a,t)=>a+t.amount,0);
-  const moOut=moTrx.filter(t=>t.type==='out'&&t.category!=='transfer').reduce((a,t)=>a+t.amount,0);
+  const moIn=moTrx.filter(t=>t.type==='in'&&t.category!=='transfer').reduce((a,t)=>a+toNum(t.amount),0);
+  const moOut=moTrx.filter(t=>t.type==='out'&&t.category!=='transfer').reduce((a,t)=>a+toNum(t.amount),0);
 
   document.getElementById('h-balance').innerHTML=`
     <div style="background:var(--card);border-radius:var(--radius);padding:20px;position:relative;overflow:hidden;border:1px solid var(--border);box-shadow:var(--sh)">
       <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">${esc(w.name)} · Saldo</div>
       <div id="h-bal-val" style="font-size:clamp(24px,7vw,34px);font-weight:700;letter-spacing:-.8px;color:var(--text);margin-bottom:${S.wallets.length>1?'4px':'20px'}">${rp(w.balance)}</div>
-      ${S.wallets.length>1?`<div style="font-size:12px;color:var(--muted);font-weight:500;margin-bottom:16px">Total semua: ${rp(S.wallets.reduce((a,x)=>a+x.balance,0))}</div>`:''}
+      ${S.wallets.length>1?`<div style="font-size:12px;color:var(--muted);font-weight:500;margin-bottom:16px">Total semua: ${rp(S.wallets.reduce((a,x)=>a+toNum(x.balance),0))}</div>`:''}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div style="background:var(--gl);border-radius:var(--radius-sm);padding:12px">
           <div style="font-size:10px;font-weight:600;color:var(--green);text-transform:uppercase;letter-spacing:.06em">↑ Masuk</div>
@@ -700,8 +709,8 @@ function rHome(){
 
   // budget alerts
   const budgetAlerts=S.budgets.map(b=>{
-    const spent=moTrxAll.filter(t=>t.type==='out'&&t.category===b.category&&t.category!=='transfer').reduce((a,t)=>a+t.amount,0);
-    const pct=b.limit?spent/b.limit:0;
+    const spent=moTrxAll.filter(t=>t.type==='out'&&t.category===b.category&&t.category!=='transfer').reduce((a,t)=>a+toNum(t.amount),0);
+    const pct=toNum(b.limit)?spent/toNum(b.limit):0;
     return{...b,spent,pct};
   }).filter(b=>b.pct>=0.7).sort((a,b)=>b.pct-a.pct).slice(0,2);
 
@@ -726,11 +735,11 @@ function rHome(){
     <div class="card">
       <div class="sec-title" style="padding:0 0 10px">🏆 Target Tabungan</div>
       ${activeSavings.map(s=>{
-        const pct=s.target?s.saved/s.target:0;
-        const done=s.saved>=s.target;
-        return`<div style="margin-bottom:10px;cursor:pointer" onclick="openSavingDetail('${s.id}')">
+        const pct=toNum(s.target)?toNum(s.saved)/toNum(s.target):0;
+        const done=toNum(s.saved)>=toNum(s.target);
+        return`<div style="margin-bottom:10px;cursor:pointer" onclick="openSavingDetail('${esc(s.id)}')">
           <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-            <span style="font-size:13px;font-weight:700">${s.emoji} ${s.name}</span>
+            <span style="font-size:13px;font-weight:700">${esc(s.emoji)} ${esc(s.name)}</span>
             <span style="font-size:12px;color:${done?'var(--green)':'var(--gold)'};font-weight:700">${done?'✅':((pct*100).toFixed(0)+'%')}</span>
           </div>
           <div class="prog"><div class="prog-f" style="width:${Math.min(pct*100,100).toFixed(0)}%;background:${done?'var(--green)':'var(--gold)'}"></div></div>
@@ -764,8 +773,8 @@ function rTrx(){
   if(trxFilter==='out')data=data.filter(t=>t.type==='out');
   if(!data.length){li.innerHTML=`<div class="empty"><div class="empty-ico">📋</div><div class="empty-title">Belum ada transaksi</div><div class="empty-sub">Tap + untuk mencatat</div></div>`;return}
   // Ringkasan total
-  const totalIn=data.filter(t=>t.type==='in'&&t.category!=='transfer').reduce((a,t)=>a+t.amount,0);
-  const totalOut=data.filter(t=>t.type==='out'&&t.category!=='transfer').reduce((a,t)=>a+t.amount,0);
+  const totalIn=data.filter(t=>t.type==='in'&&t.category!=='transfer').reduce((a,t)=>a+toNum(t.amount),0);
+  const totalOut=data.filter(t=>t.type==='out'&&t.category!=='transfer').reduce((a,t)=>a+toNum(t.amount),0);
   const summaryHtml=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
     <div style="background:var(--gl);border-radius:12px;padding:10px 12px">
       <div style="font-size:10px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.04em">Masuk</div>
@@ -871,7 +880,7 @@ function openTrxAdd(){
   });
   setTrxType('out');
   const sel=document.getElementById('tf-wallet');
-  sel.innerHTML=S.wallets.map(w=>`<option value="${w.id}">${w.emoji} ${w.name} — ${rp(w.balance)}</option>`).join('');
+  sel.innerHTML=S.wallets.map(w=>`<option value="${esc(w.id)}">${esc(w.emoji)} ${esc(w.name)} — ${rp(w.balance)}</option>`).join('');
   sel.value=S.wid||S.wallets[0]?.id;
   osh('sh-tf');
 }
@@ -898,7 +907,7 @@ function openTrxEdit(id){
     renderCatGrid('tf-cats',t.type==='in'?IN_CATS:OUT_CATS,'tf-cat');
   }
   const sel=document.getElementById('tf-wallet');
-  sel.innerHTML=S.wallets.map(w=>`<option value="${w.id}">${w.emoji} ${w.name}</option>`).join('');
+  sel.innerHTML=S.wallets.map(w=>`<option value="${esc(w.id)}">${esc(w.emoji)} ${esc(w.name)}</option>`).join('');
   sel.value=t.wallet_id;
   osh('sh-tf');
 }
@@ -925,24 +934,26 @@ async function saveTrx(){
       // wallet berubah: reverse saldo di wallet lama
       const wOld=S.wallets.find(x=>x.id===oldTrx.wallet_id);
       if(wOld){
-        let oldBal=wOld.balance;
-        if(oldTrx.type==='in')oldBal-=oldTrx.amount;
-        else oldBal+=oldTrx.amount;
+        let oldBal=toNum(wOld.balance);
+        if(oldTrx.type==='in')oldBal-=toNum(oldTrx.amount);
+        else oldBal+=toNum(oldTrx.amount);
         await dbU(`dk_wallets?id=eq.${wOld.id}`,{balance:oldBal});
         wOld.balance=oldBal;
       }
-      let newBal=w.balance;
-      if(curTrxType==='in')newBal+=amt;
+      let newBal=toNum(w.balance);
+      const effectiveTypeA=isEditTransfer?oldTrx.type:curTrxType;
+      if(effectiveTypeA==='in')newBal+=amt;
       else newBal-=amt;
       await dbU(`dk_wallets?id=eq.${wid}`,{balance:newBal});
       w.balance=newBal;
     }else{
-      let newBal=w.balance;
+      let newBal=toNum(w.balance);
       if(oldTrx){
-        if(oldTrx.type==='in')newBal-=oldTrx.amount;
-        else newBal+=oldTrx.amount;
+        if(oldTrx.type==='in')newBal-=toNum(oldTrx.amount);
+        else newBal+=toNum(oldTrx.amount);
       }
-      if(curTrxType==='in')newBal+=amt;
+      const effectiveType=isEditTransfer?oldTrx.type:curTrxType;
+      if(effectiveType==='in')newBal+=amt;
       else newBal-=amt;
       await dbU(`dk_wallets?id=eq.${wid}`,{balance:newBal});
       w.balance=newBal;
@@ -954,7 +965,7 @@ async function saveTrx(){
       const newId=nuid();
       const res=await dbP('dk_trx',{...data,id:newId});
       const trx=(Array.isArray(res)&&res.length)?res[0]:{...data,id:newId};
-      S.trx.unshift(trx);
+      S.trx.unshift({...trx,amount:toNum(trx.amount)});
     }
     csh('sh-tf');toast(id?'Transaksi diperbarui':'Transaksi dicatat','ok');rHome();rTrx();flashBalance();
   }catch(err){toast('Gagal: '+err.message,'e')}
@@ -990,7 +1001,7 @@ async function delTrx(){
           wPair.balance=pairBal;
         }
         // Hapus transaksi pasangan
-        const pairTrx=S.trx.find(x=>x.id!==id&&x.category==='transfer'&&x.to_wallet_id===t.wallet_id&&x.wallet_id===t.to_wallet_id&&x.amount===t.amount&&x.date===t.date);
+        const pairTrx=S.trx.find(x=>x.id!==id&&x.category==='transfer'&&x.to_wallet_id===t.wallet_id&&x.wallet_id===t.to_wallet_id&&x.amount===t.amount&&(x.date?.split('T')[0])===t.date?.split('T')[0]);
         if(pairTrx){
           await dbU(`dk_trx?id=eq.${pairTrx.id}`,{deleted_at:deletedAt});
           S.trx=S.trx.filter(x=>x.id!==pairTrx.id);
@@ -1024,8 +1035,8 @@ function rBudget(){
   }
   li.innerHTML=S.budgets.map(b=>{
     const ci=catInfo(b.category,'out');
-    const spent=moTrx.filter(t=>t.category===b.category).reduce((a,t)=>a+t.amount,0);
-    const pct=b.limit?spent/b.limit:0;
+    const spent=moTrx.filter(t=>t.category===b.category).reduce((a,t)=>a+toNum(t.amount),0);
+    const pct=toNum(b.limit)?spent/toNum(b.limit):0;
     const color=pct>=1?'var(--red)':pct>=0.7?'var(--gold)':'var(--green)';
     return`<div class="card mt8" style="cursor:pointer" onclick="openBudgetEdit('${b.id}')">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
@@ -1074,7 +1085,7 @@ async function saveBudget(){
   const data={user_id:S.user.id,category:cat,limit};
   try{
     if(id){await dbU(`dk_budgets?id=eq.${id}`,data);const i=S.budgets.findIndex(b=>b.id===id);if(i!==-1)S.budgets[i]={...S.budgets[i],...data}}
-    else{const newId=nuid();const res=await dbP('dk_budgets',{...data,id:newId});const b=(Array.isArray(res)&&res.length)?res[0]:{...data,id:newId};S.budgets.push(b)}
+    else{const newId=nuid();const res=await dbP('dk_budgets',{...data,id:newId});const b=(Array.isArray(res)&&res.length)?res[0]:{...data,id:newId};S.budgets.push({...b,limit:toNum(b.limit)})}
     csh('sh-bf');toast(id?'Budget diperbarui':'Budget ditambahkan','ok');rBudget();rHome();
   }catch(err){toast('Gagal: '+err.message,'e')}
 }
@@ -1095,8 +1106,8 @@ function rSaving(){
     li.innerHTML=`<div class="empty"><div class="empty-ico">🏆</div><div class="empty-title">Belum ada tabungan</div><div class="empty-sub">Tap + untuk buat target tabungan</div></div>`;return;
   }
   li.innerHTML=S.savings.map(s=>{
-    const pct=s.target?Math.min(s.saved/s.target,1):0;
-    const done=s.saved>=s.target;
+    const pct=toNum(s.target)?Math.min(toNum(s.saved)/toNum(s.target),1):0;
+    const done=toNum(s.saved)>=toNum(s.target);
     const now=new Date();
     const deadlineDays=s.deadline?Math.ceil((new Date(s.deadline)-now)/864e5):null;
     const deadlineWarn=!done&&deadlineDays!==null&&deadlineDays<=30;
@@ -1108,34 +1119,34 @@ function rSaving(){
           <div class="sav-target">Target: ${rp(s.target)}</div>
           ${deadlineLabel?`<div style="font-size:11px;font-weight:700;color:${deadlineDays<0||deadlineDays===0?'var(--red)':'var(--gold)'};margin-top:2px">${deadlineLabel}</div>`:''}
         </div>
-        <div class="sav-emoji">${s.emoji}</div>
+        <div class="sav-emoji">${esc(s.emoji)}</div>
       </div>
       <div class="sav-amt">${rp(s.saved)}</div>
       <div class="prog mt8"><div class="prog-f" style="width:${Math.min(pct*100,100).toFixed(0)}%;background:${done?'var(--green)':'var(--gold)'}"></div></div>
-      <div class="sav-pct">${done?'✅ Tercapai!':((pct*100).toFixed(0)+'% · sisa '+rp(s.target-s.saved))}</div>
+      <div class="sav-pct">${done?'✅ Tercapai!':((pct*100).toFixed(0)+'% · sisa '+rp(toNum(s.target)-toNum(s.saved)))}</div>
     </div>`;
   }).join('');
 }
 function openSavingDetail(id){
   const s=S.savings.find(x=>x.id===id);if(!s)return;
-  const pct=s.target?Math.min(s.saved/s.target,1):0;
+  const pct=toNum(s.target)?Math.min(toNum(s.saved)/toNum(s.target),1):0;
   document.getElementById('sh-svd-t').textContent=`${s.emoji} ${s.name}`;
   const deadlineStr=s.deadline?`<div style="font-size:12px;color:var(--muted);margin-top:4px">🗓️ Deadline: ${new Date(s.deadline).toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'})}</div>`:'';
   const noteStr=s.note?`<div style="margin-top:16px;background:var(--card2);border-radius:12px;padding:12px;font-size:13px;color:var(--text2);line-height:1.6;text-align:left">${esc(s.note)}</div>`:'';
   document.getElementById('sh-svd-body').innerHTML=`
     <div style="text-align:center;padding:16px 0 8px">
-      <div style="font-size:48px;margin-bottom:8px">${s.emoji}</div>
+      <div style="font-size:48px;margin-bottom:8px">${esc(s.emoji)}</div>
       <div style="font-size:28px;font-weight:800;color:var(--gold)">${rp(s.saved)}</div>
       <div style="font-size:13px;color:var(--muted);margin-top:4px">dari target ${rp(s.target)}</div>
       <div class="prog" style="margin:16px 0 8px"><div class="prog-f" style="width:${(pct*100).toFixed(0)}%;background:${pct>=1?'var(--green)':'var(--gold)'}"></div></div>
       <div style="font-size:13px;font-weight:700;color:var(--gold)">${(pct*100).toFixed(0)}% tercapai</div>
-      ${s.saved<s.target?`<div style="font-size:12px;color:var(--muted);margin-top:4px">Sisa ${rp(s.target-s.saved)}</div>`:'<div style="font-size:14px;font-weight:700;color:var(--green);margin-top:8px">🎉 Target tercapai!</div>'}
+      ${toNum(s.saved)<toNum(s.target)?`<div style="font-size:12px;color:var(--muted);margin-top:4px">Sisa ${rp(toNum(s.target)-toNum(s.saved))}</div>`:'<div style="font-size:14px;font-weight:700;color:var(--green);margin-top:8px">🎉 Target tercapai!</div>'}
       ${deadlineStr}
       ${noteStr}
     </div>
     <div style="display:flex;gap:8px;margin-top:8px">
-      <button class="btn btn-s" style="flex:1" onclick="openSavingEdit('${s.id}')">Edit</button>
-      ${s.saved<s.target?`<button class="btn btn-p" style="flex:1" onclick="openSavingTopup('${s.id}')">+ Tambah</button>`:''}
+      <button class="btn btn-s" style="flex:1" onclick="openSavingEdit('${esc(s.id)}')">Edit</button>
+      ${toNum(s.saved)<toNum(s.target)?`<button class="btn btn-p" style="flex:1" onclick="openSavingTopup('${esc(s.id)}')">+ Tambah</button>`:''}
     </div>`;
   osh('sh-svd');
 }
@@ -1144,11 +1155,11 @@ function openSavingTopup(id){
   const m=document.createElement('div');
   m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px)';
   m.innerHTML=`<div style="background:var(--card);border-radius:24px 24px 0 0;width:100%;max-width:430px;padding:24px 18px 40px">
-    <div style="font-size:17px;font-weight:800;margin-bottom:4px">${s.emoji} Tambah ke ${s.name}</div>
+    <div style="font-size:17px;font-weight:800;margin-bottom:4px">${esc(s.emoji)} Tambah ke ${esc(s.name)}</div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:16px">Sudah terkumpul: ${rp(s.saved)} dari ${rp(s.target)}</div>
     <div style="position:relative;margin-bottom:16px">
       <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;font-weight:600">Rp</span>
-      <input id="_tu_amt" type="number" inputmode="numeric" placeholder="100000" style="padding:12px 14px 12px 32px;width:100%;background:var(--card2);border:1.5px solid var(--border);border-radius:12px;font-size:14px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;outline:none">
+      <input id="_tu_amt" type="number" inputmode="numeric" placeholder="100000" style="padding:12px 14px 12px 32px;width:100%;background:var(--card2);border:1.5px solid var(--border);border-radius:12px;font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none">
     </div>
     <button id="_tu_ok" style="width:100%;padding:13px;border-radius:12px;border:none;background:var(--accent);color:#0d0d0d;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:8px">+ Tambah Tabungan</button>
     <button id="_tu_cn" style="width:100%;padding:13px;border-radius:12px;border:1.5px solid var(--border);background:none;font-size:14px;font-weight:600;cursor:pointer;color:var(--muted)">Batal</button>
@@ -1158,13 +1169,13 @@ function openSavingTopup(id){
   m.querySelector('#_tu_ok').onclick=async()=>{
     const n=parseFloat(m.querySelector('#_tu_amt').value);
     if(!n||n<=0){toast('Isi jumlah dulu','e');return}
-    const sisa=s.target-s.saved;
+    const sisa=toNum(s.target)-toNum(s.saved);
     if(n>sisa){toast(`Maksimal tambah ${rp(sisa)}`,'e');return}
     try{
       const newSaved=toNum(s.saved)+n;
       await dbU(`dk_savings?id=eq.${id}`,{saved:newSaved});
       s.saved=newSaved;m.remove();csh('sh-svd');
-      toast(s.saved>=s.target?'Target tercapai! 🎉':'Tabungan bertambah! 💪','ok');
+      toast(toNum(s.saved)>=toNum(s.target)?'Target tercapai! 🎉':'Tabungan bertambah! 💪','ok');
       rSaving();rHome();
     }catch(err){toast('Gagal: '+err.message,'e')}
   };
@@ -1220,7 +1231,7 @@ async function saveSaving(){
   const data={user_id:S.user.id,name,emoji:document.getElementById('svf-emoji').value||'🎯',target,saved,deadline:document.getElementById('svf-deadline').value||null,note:document.getElementById('svf-note').value.trim()||null};
   try{
     if(id){await dbU(`dk_savings?id=eq.${id}`,data);const i=S.savings.findIndex(s=>s.id===id);if(i!==-1)S.savings[i]={...S.savings[i],...data}}
-    else{const newId=nuid();const res=await dbP('dk_savings',{...data,id:newId});const s=(Array.isArray(res)&&res.length)?res[0]:{...data,id:newId};S.savings.push(s)}
+    else{const newId=nuid();const res=await dbP('dk_savings',{...data,id:newId});const s=(Array.isArray(res)&&res.length)?res[0]:{...data,id:newId};S.savings.push({...s,target:toNum(s.target),saved:toNum(s.saved)})}
     csh('sh-svf');toast(id?'Tabungan diperbarui':'Tabungan ditambahkan','ok');rSaving();rHome();
   }catch(err){toast('Gagal: '+err.message,'e')}
 }
@@ -1272,7 +1283,7 @@ async function saveWallet(){
   const data={name,emoji,balance,user_id:S.user.id};
   try{
     if(id){await dbU(`dk_wallets?id=eq.${id}`,data);const i=S.wallets.findIndex(w=>w.id===id);if(i!==-1)S.wallets[i]={...S.wallets[i],...data}}
-    else{const newId=nuid();const res=await dbP('dk_wallets',{...data,id:newId});const w=(Array.isArray(res)&&res.length)?res[0]:{...data,id:newId};S.wallets.push(w);if(!S.wid)S.wid=w.id}
+    else{const newId=nuid();const res=await dbP('dk_wallets',{...data,id:newId});const raw=(Array.isArray(res)&&res.length)?res[0]:{...data,id:newId};const w={...raw,balance:toNum(raw.balance)};S.wallets.push(w);if(!S.wid)S.wid=w.id}
     csh('sh-wf');toast(id?'Dompet diperbarui':'Dompet ditambahkan','ok');rSet();rHome();
   }catch(err){toast('Gagal: '+err.message,'e')}
 }
@@ -1309,7 +1320,7 @@ function openRoutineAdd(){
   document.getElementById('sh-rf-t').textContent='Tambah Rutin';
   setRoutineType('out');
   const sel=document.getElementById('rf-wallet');
-  sel.innerHTML=S.wallets.map(w=>`<option value="${w.id}">${w.emoji} ${w.name}</option>`).join('');
+  sel.innerHTML=S.wallets.map(w=>`<option value="${esc(w.id)}">${esc(w.emoji)} ${esc(w.name)}</option>`).join('');
   osh('sh-rf');
 }
 async function saveRoutine(){
@@ -1323,7 +1334,7 @@ async function saveRoutine(){
   const data={user_id:S.user.id,name,type:curRoutineType,amount:amt,day,wallet_id:document.getElementById('rf-wallet').value};
   try{
     if(id){await dbU(`dk_routines?id=eq.${id}`,data);const i=S.routines.findIndex(r=>r.id===id);if(i!==-1)S.routines[i]={...S.routines[i],...data}}
-    else{const newId=nuid();const res=await dbP('dk_routines',{...data,id:newId});const r=(Array.isArray(res)&&res.length)?res[0]:{...data,id:newId};S.routines.push(r)}
+    else{const newId=nuid();const res=await dbP('dk_routines',{...data,id:newId});const r=(Array.isArray(res)&&res.length)?res[0]:{...data,id:newId};S.routines.push({...r,amount:toNum(r.amount)})}
     csh('sh-rf');toast(id?'Rutin diperbarui':'Rutin ditambahkan','ok');rSet();
   }catch(err){toast('Gagal: '+err.message,'e')}
 }
@@ -1355,7 +1366,7 @@ function rSet(){
           :`<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="5" y="2" width="14" height="20" rx="2" fill="currentColor" opacity=".2"/><rect x="5" y="2" width="14" height="20" rx="2" stroke="currentColor" stroke-width="1.75"/><path d="M9 8H15M9 12H15M9 16H12" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg>`
         }</div>
         <div class="li-body" style="cursor:pointer" onclick="openRoutineEdit('${esc(r.id)}')"><div class="li-title">${esc(r.name)}</div><div class="li-sub">Tgl ${r.day} tiap bulan · ${rp(r.amount)}</div></div>
-        <button id="rb-apply-${esc(r.id)}" onclick="applyRoutine('${esc(r.id)}')" style="font-size:11px;font-weight:700;padding:6px 12px;border-radius:8px;border:none;cursor:pointer;background:${isDue?'var(--accent)':'var(--card2)'};color:${isDue?'#0d0d0d':'var(--muted)'};font-family:'Plus Jakarta Sans',sans-serif;flex-shrink:0">Terapkan</button>
+        <button id="rb-apply-${esc(r.id)}" onclick="applyRoutine('${esc(r.id)}')" style="font-size:11px;font-weight:700;padding:6px 12px;border-radius:8px;border:none;cursor:pointer;background:${isDue?'var(--accent)':'var(--card2)'};color:${isDue?'#0d0d0d':'var(--muted)'};font-family:'DM Sans',sans-serif;flex-shrink:0">Terapkan</button>
       </div>`;
     }).join('');
   document.getElementById('dark-tog').checked=document.documentElement.getAttribute('data-theme')==='dark';
@@ -1371,7 +1382,7 @@ function openRoutineEdit(id){
   document.getElementById('sh-rf-t').textContent='Edit Rutin';
   setRoutineType(r.type);
   const sel=document.getElementById('rf-wallet');
-  sel.innerHTML=S.wallets.map(w=>`<option value="${w.id}">${w.emoji} ${w.name}</option>`).join('');
+  sel.innerHTML=S.wallets.map(w=>`<option value="${esc(w.id)}">${esc(w.emoji)} ${esc(w.name)}</option>`).join('');
   sel.value=r.wallet_id;
   osh('sh-rf');
 }
@@ -1380,7 +1391,7 @@ function openRoutineEdit(id){
 // ── TRANSFER ──────────────────────────────────────────
 function openTransfer(){
   if(S.wallets.length<2){toast('Butuh minimal 2 dompet untuk transfer','e');return}
-  const opts=S.wallets.map(w=>`<option value="${w.id}">${w.emoji} ${w.name} — ${rp(w.balance)}</option>`).join('');
+  const opts=S.wallets.map(w=>`<option value="${esc(w.id)}">${esc(w.emoji)} ${esc(w.name)} — ${rp(w.balance)}</option>`).join('');
   document.getElementById('tr-from').innerHTML=opts;
   document.getElementById('tr-to').innerHTML=opts;
   document.getElementById('tr-from').value=S.wid||S.wallets[0].id;
@@ -1451,12 +1462,12 @@ function doSearch(){
 function exportRingkasan(){
   const now=new Date();
   const moTrx=S.trx.filter(t=>{const d=new Date(t.date);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();});
-  const moIn=moTrx.filter(t=>t.type==='in'&&t.category!=='transfer').reduce((a,t)=>a+t.amount,0);
-  const moOut=moTrx.filter(t=>t.type==='out'&&t.category!=='transfer').reduce((a,t)=>a+t.amount,0);
+  const moIn=moTrx.filter(t=>t.type==='in'&&t.category!=='transfer').reduce((a,t)=>a+toNum(t.amount),0);
+  const moOut=moTrx.filter(t=>t.type==='out'&&t.category!=='transfer').reduce((a,t)=>a+toNum(t.amount),0);
   const bycat={};
   moTrx.filter(t=>t.type==='out'&&t.category!=='transfer').forEach(t=>{
     if(!bycat[t.category])bycat[t.category]=0;
-    bycat[t.category]+=t.amount;
+    bycat[t.category]+=toNum(t.amount);
   });
   const bulan=now.toLocaleDateString('id-ID',{month:'long',year:'numeric'});
   const walletLines=S.wallets.map(w=>`  ${w.emoji} ${w.name}: ${rp(w.balance)}`).join('\n');
@@ -1486,13 +1497,13 @@ async function applyRoutine(id){
   if(btn){btn.style.opacity='0.6';btn.disabled=true;}
   try{
     w.balance=toNum(w.balance);const rAmt=toNum(r.amount);
-  const newBal=r.type==='in'?w.balance+rAmt:w.balance-rAmt;
+    const newBal=r.type==='in'?w.balance+rAmt:w.balance-rAmt;
     const trxId=nuid();
     const trxData={id:trxId,user_id:S.user.id,wallet_id:r.wallet_id,type:r.type,amount:rAmt,category:'lainnya',date:todayD(),note:r.name};
     const res=await dbP('dk_trx',trxData);
     const trx=(Array.isArray(res)&&res.length)?res[0]:trxData;
     await dbU(`dk_wallets?id=eq.${r.wallet_id}`,{balance:newBal});
-    w.balance=newBal;S.trx.unshift(trx);
+    w.balance=newBal;S.trx.unshift({...trx,amount:toNum(trx.amount)});
     toast(`${r.name} diterapkan ✓`,'ok');rSet();rHome();rTrx();
   }catch(err){toast('Gagal: '+err.message,'e');if(btn){btn.style.opacity='';btn.disabled=false;}}
 }
@@ -1569,7 +1580,7 @@ function showPDFPreview(type){
       <button id="prev-download" style="font-size:13px;font-weight:600;color:var(--bg);background:var(--accent);padding:8px 16px;border-radius:var(--radius-sm);border:none;cursor:pointer;font-family:'DM Sans',sans-serif">⬇ Download</button>
     </div>
     <div style="flex:1;overflow-y:auto;padding:16px">
-      <div id="pdf-frame" style="background:#fff;border-radius:var(--radius);overflow:hidden;box-shadow:var(--sh2);max-width:600px;margin:0 auto">${htmlContent}</div>
+      <div id="pdf-frame" style="background:#fff;border-radius:var(--radius);overflow:hidden;box-shadow:var(--sh);max-width:600px;margin:0 auto">${htmlContent}</div>
     </div>`;
   document.body.appendChild(prev);
 
@@ -1579,11 +1590,11 @@ function showPDFPreview(type){
 
 function buildRingkasanHTML(now,bulan,username){
   const moTrx=S.trx.filter(t=>{const d=new Date(t.date);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();});
-  const moIn=moTrx.filter(t=>t.type==='in'&&t.category!=='transfer').reduce((a,t)=>a+t.amount,0);
-  const moOut=moTrx.filter(t=>t.type==='out'&&t.category!=='transfer').reduce((a,t)=>a+t.amount,0);
+  const moIn=moTrx.filter(t=>t.type==='in'&&t.category!=='transfer').reduce((a,t)=>a+toNum(t.amount),0);
+  const moOut=moTrx.filter(t=>t.type==='out'&&t.category!=='transfer').reduce((a,t)=>a+toNum(t.amount),0);
   const selisih=moIn-moOut;
   const bycat={};
-  moTrx.filter(t=>t.type==='out'&&t.category!=='transfer').forEach(t=>{if(!bycat[t.category])bycat[t.category]=0;bycat[t.category]+=t.amount;});
+  moTrx.filter(t=>t.type==='out'&&t.category!=='transfer').forEach(t=>{if(!bycat[t.category])bycat[t.category]=0;bycat[t.category]+=toNum(t.amount);});
   const catRows=Object.entries(bycat).sort((a,b)=>b[1]-a[1]).map(([k,v])=>{const ci=catInfo(k,'out');return`<tr><td style="padding:10px 16px;font-size:13px">${esc(ci.e)} ${esc(ci.l)}</td><td style="padding:10px 16px;font-size:13px;text-align:right;color:#dc2626;font-weight:600">${rp(v)}</td></tr>`;}).join('');
   const walletRows=S.wallets.map(w=>`<tr><td style="padding:10px 16px;font-size:13px">${esc(w.emoji)} ${esc(w.name)}</td><td style="padding:10px 16px;font-size:13px;text-align:right;font-weight:600">${rp(w.balance)}</td></tr>`).join('');
   return`<div style="font-family:system-ui,sans-serif;background:#fff;padding:32px">
