@@ -74,7 +74,7 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 .li:last-child{border-radius:0 0 var(--radius) var(--radius);border-bottom:none}
 .li:only-child{border-radius:var(--radius);border-bottom:none}
 .li:active{background:var(--card2)}
-.li-ico{width:40px;height:40px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.li-ico{width:40px;height:40px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;color:var(--muted)}
 .li-ico.g{background:var(--gl)}.li-ico.r{background:var(--rl)}.li-ico.gold{background:var(--goldl)}.li-ico.x{background:var(--card2)}
 .li-body{flex:1;min-width:0}
 .li-title{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.1px}
@@ -161,9 +161,9 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 
 /* cat grid */
 .cat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-.cat-item{background:var(--card2);border-radius:var(--radius-sm);padding:10px 6px;text-align:center;font-size:20px;cursor:pointer;transition:.15s;border:1.5px solid transparent}
-.cat-item div{font-size:9px;font-weight:600;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.04em}
-.cat-item.on{border-color:var(--text);background:var(--al)}
+.cat-item{background:var(--card2);border-radius:var(--radius-sm);padding:10px 6px;text-align:center;font-size:20px;cursor:pointer;transition:.15s;border:1.5px solid transparent;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--muted)}
+.cat-item div{font-size:9px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.cat-item.on{border-color:var(--text);background:var(--al);color:var(--text)}
 .cat-item.on div{color:var(--text2)}
 
 /* wallet chip */
@@ -222,7 +222,7 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
   <div class="a-form">
     <div class="fg"><label class="fl">Username</label><input id="au" type="text" autocomplete="off" placeholder="username" autocapitalize="none"></div>
     <div class="a-err" id="ae"></div>
-    <button class="btn btn-p" id="as-btn" onclick="authSubmit()">💰 Masuk</button>
+    <button class="btn btn-p" id="as-btn" onclick="authSubmit()">Masuk</button>
   </div>
 </div>
 
@@ -238,7 +238,7 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
         <button class="hd-btn" onclick="navTo('settings')">⚙️</button>
       </div>
     </div>
-    <div style="padding:16px;display:flex;flex-direction:column;gap:16px">
+    <div style="padding:16px 20px;display:flex;flex-direction:column;gap:14px">
       <div id="h-balance"></div>
       <div id="h-budget"></div>
       <div id="h-saving"></div>
@@ -297,6 +297,16 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
     <div style="padding:16px;display:flex;flex-direction:column;gap:16px">
       <div><div class="sec-title" style="padding:0 0 10px">Dompet / Rekening</div><div id="set-wallets"></div><button class="btn btn-s mt8" onclick="openWalletAdd()">+ Tambah Dompet</button></div>
       <div><div class="sec-title" style="padding:0 0 10px">Transaksi Rutin</div><div id="set-routine"></div><button class="btn btn-s mt8" onclick="openRoutineAdd()">+ Tambah Rutin</button></div>
+      <div>
+        <div class="sec-title" style="padding:0 0 10px">Kategori Pengeluaran</div>
+        <div id="set-out-cats"></div>
+        <button class="btn btn-s mt8" onclick="openCatAdd('out')">+ Tambah Kategori</button>
+      </div>
+      <div>
+        <div class="sec-title" style="padding:0 0 10px">Kategori Pemasukan</div>
+        <div id="set-in-cats"></div>
+        <button class="btn btn-s mt8" onclick="openCatAdd('in')">+ Tambah Kategori</button>
+      </div>
       <div class="card"><div class="trow" style="padding:0"><div class="tinfo"><div class="tlabel">Mode Gelap</div></div><label class="tog"><input type="checkbox" id="dark-tog" onchange="toggleTheme()"><span class="tog-sl"></span></label></div></div>
       <div class="card"><div class="sec-title" style="padding:0 0 8px">Akun</div>
         <div style="font-size:13px;color:var(--muted);margin-bottom:12px">Login sebagai <span id="set-user" style="color:var(--text);font-weight:700"></span></div>
@@ -309,19 +319,19 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
   <!-- NAV -->
   <nav id="bnav">
     <div class="ni on" onclick="navTo('home')" id="ni-home">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Beranda
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 12H3L12 3L21 12H19" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 12V19C5 19.5523 5.44772 20 6 20H9V16C9 15.4477 9.44772 15 10 15H14C14.5523 15 15 15.4477 15 16V20H18C18.5523 20 19 19.5523 19 19V12" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>Beranda
     </div>
     <div class="ni" onclick="navTo('trx')" id="ni-trx">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>Transaksi
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 6H21M3 12H21M3 18H15" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/><circle cx="19" cy="18" r="2.5" stroke="currentColor" stroke-width="1.75"/></svg>Transaksi
     </div>
     <div class="ni" onclick="navTo('budget')" id="ni-budget">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Budget
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" stroke-width="1.75"/><path d="M3 9H21" stroke="currentColor" stroke-width="1.75"/><path d="M9 21V9" stroke="currentColor" stroke-width="1.75"/></svg>Budget
     </div>
     <div class="ni" onclick="navTo('saving')" id="ni-saving">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>Tabungan
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M19 7H5C3.89543 7 3 7.89543 3 9V18C3 19.1046 3.89543 20 5 20H19C20.1046 20 21 19.1046 21 18V9C21 7.89543 20.1046 7 19 7Z" stroke="currentColor" stroke-width="1.75"/><path d="M16 7V6C16 4.89543 15.1046 4 14 4H10C8.89543 4 8 4.89543 8 6V7" stroke="currentColor" stroke-width="1.75"/><circle cx="12" cy="13.5" r="2" stroke="currentColor" stroke-width="1.75"/></svg>Tabungan
     </div>
     <div class="ni" onclick="navTo('settings')" id="ni-settings">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Setelan
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="8" r="3" stroke="currentColor" stroke-width="1.75"/><path d="M6 20C6 17.7909 8.68629 16 12 16C15.3137 16 18 17.7909 18 20" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg>Profil
     </div>
   </nav>
 </div>
@@ -339,13 +349,23 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
   <input type="hidden" id="wf-id">
   <div class="fg"><label class="fl">Nama</label><input id="wf-name" type="text" placeholder="cth: Kas, Dana, OVO, BCA"></div>
   <div class="fg"><label class="fl">Emoji / Ikon</label>
-    <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:8px" id="wf-emoji-grid">
+    <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:10px" id="wf-emoji-grid">
       <div class="cat-item" data-emoji="💵" onclick="pickWalletEmoji('💵')">💵</div>
       <div class="cat-item" data-emoji="💳" onclick="pickWalletEmoji('💳')">💳</div>
       <div class="cat-item" data-emoji="🏦" onclick="pickWalletEmoji('🏦')">🏦</div>
       <div class="cat-item" data-emoji="📱" onclick="pickWalletEmoji('📱')">📱</div>
       <div class="cat-item" data-emoji="👛" onclick="pickWalletEmoji('👛')">👛</div>
       <div class="cat-item" data-emoji="🏧" onclick="pickWalletEmoji('🏧')">🏧</div>
+      <div class="cat-item" data-emoji="💴" onclick="pickWalletEmoji('💴')">💴</div>
+      <div class="cat-item" data-emoji="🪙" onclick="pickWalletEmoji('🪙')">🪙</div>
+      <div class="cat-item" data-emoji="💎" onclick="pickWalletEmoji('💎')">💎</div>
+      <div class="cat-item" data-emoji="🏠" onclick="pickWalletEmoji('🏠')">🏠</div>
+      <div class="cat-item" data-emoji="🚗" onclick="pickWalletEmoji('🚗')">🚗</div>
+      <div class="cat-item" data-emoji="✈️" onclick="pickWalletEmoji('✈️')">✈️</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:12px;color:var(--muted);font-weight:500;flex-shrink:0">Atau ketik emoji:</span>
+      <input type="text" id="wf-emoji-input" placeholder="😀" maxlength="2" style="width:56px;text-align:center;font-size:20px;padding:8px" oninput="pickWalletEmoji(this.value||'💵')">
     </div>
     <input type="hidden" id="wf-emoji" value="💵">
   </div>
@@ -449,21 +469,40 @@ let S={user:null,wallets:[],wid:null,trx:[],budgets:[],savings:[],routines:[]};
 const gw=()=>S.wallets.find(w=>w.id===S.wid);
 
 // ── UTILS ─────────────────────────────────────────────
-const rp=(n)=>{if(n==null||n==='')return'—';const v=Number(n);return'Rp '+v.toLocaleString('id-ID',{maximumFractionDigits:0})};
+const rp=(n)=>{if(n==null||n==='')return'—';const v=Number(n);if(isNaN(v)||!isFinite(v))return'Rp 0';return'Rp '+v.toLocaleString('id-ID',{maximumFractionDigits:0})};
 const todayD=()=>new Date().toISOString().split('T')[0];
 const fmtD=(d)=>{if(!d)return'—';return new Date(d).toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'})};
 const fmtDS=(d)=>{if(!d)return'—';return new Date(d).toLocaleDateString('id-ID',{day:'numeric',month:'short'})};
 const nuid=()=>crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2);
 
-const OUT_CATS=[
+const DEFAULT_OUT_CATS=[
   {v:'makan',e:'🍽️',l:'Makan'},{v:'transport',e:'🚗',l:'Transport'},{v:'belanja',e:'🛒',l:'Belanja'},
   {v:'hiburan',e:'🎮',l:'Hiburan'},{v:'kesehatan',e:'💊',l:'Kesehatan'},{v:'tagihan',e:'🧾',l:'Tagihan'},
-  {v:'pendidikan',e:'📚',l:'Pendidikan'},{v:'lainnya',e:'💸',l:'Lainnya'}
+  {v:'pendidikan',e:'📚',l:'Pendidikan'},{v:'fashion',e:'👕',l:'Fashion'},{v:'lainnya',e:'💸',l:'Lainnya'}
 ];
-const IN_CATS=[
+const DEFAULT_IN_CATS=[
   {v:'gaji',e:'💼',l:'Gaji'},{v:'freelance',e:'💻',l:'Freelance'},{v:'bisnis',e:'🏪',l:'Bisnis'},
   {v:'investasi',e:'📈',l:'Investasi'},{v:'hadiah',e:'🎁',l:'Hadiah'},{v:'lainnya',e:'💰',l:'Lainnya'}
 ];
+const OUT_CATS=[];
+const IN_CATS=[];
+function loadCats(){
+  try{
+    const o=localStorage.getItem('dk_out_cats');
+    const i=localStorage.getItem('dk_in_cats');
+    OUT_CATS.length=0;IN_CATS.length=0;
+    (o?JSON.parse(o):DEFAULT_OUT_CATS).forEach(c=>OUT_CATS.push(c));
+    (i?JSON.parse(i):DEFAULT_IN_CATS).forEach(c=>IN_CATS.push(c));
+  }catch(e){
+    DEFAULT_OUT_CATS.forEach(c=>OUT_CATS.push(c));
+    DEFAULT_IN_CATS.forEach(c=>IN_CATS.push(c));
+  }
+}
+function saveCats(){
+  localStorage.setItem('dk_out_cats',JSON.stringify(OUT_CATS));
+  localStorage.setItem('dk_in_cats',JSON.stringify(IN_CATS));
+}
+loadCats();
 const catInfo=(v,type)=>{if(v==='transfer')return{e:'↕️',l:'Transfer'};const arr=type==='in'?IN_CATS:OUT_CATS;return arr.find(c=>c.v===v)||{e:'💸',l:v}};
 const esc=(s)=>s==null?'':String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 
@@ -569,7 +608,7 @@ function logout(){
   document.getElementById('auth-page').classList.add('active');
   document.getElementById('au').value='';
   document.getElementById('ae').textContent='';
-  const btn=document.getElementById('as-btn');btn.style.opacity='';btn.disabled=false;
+  const btn=document.getElementById('as-btn');if(btn){btn.style.opacity='';btn.disabled=false;}
 }
 
 // ── DATA LOAD ─────────────────────────────────────────
@@ -607,7 +646,7 @@ async function loadTrx(){
 // ── WALLET SWITCH ─────────────────────────────────────
 function openWalletSwitch(){
   const li=document.getElementById('sh-wlist');
-  const totalBal=S.wallets.reduce((a,w)=>a+w.balance,0);
+  const totalBal=S.wallets.reduce((a,w)=>a+toNum(w.balance),0);
   const totalHtml=S.wallets.length>1?`<div style="background:var(--al);border-radius:12px;padding:10px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;font-weight:700;color:var(--muted)">Total Semua Dompet</span><span style="font-size:14px;font-weight:800;color:var(--accent)">${rp(totalBal)}</span></div>`:'';
   li.innerHTML=!S.wallets.length?`<div class="empty"><div class="empty-ico">💳</div><div class="empty-title">Belum ada dompet</div></div>`:
     totalHtml+S.wallets.map(w=>`<div class="w-item" onclick="switchWallet('${w.id}')">
@@ -673,7 +712,7 @@ function rHome(){
         const ci=catInfo(b.category,'out');
         return`<div style="margin-bottom:10px">
           <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-            <span style="font-size:13px;font-weight:700">${ci.e} ${ci.l}</span>
+            <span style="font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px"><span style="width:20px;height:20px;display:flex;color:${b.pct>=1?'var(--red)':'var(--gold)'}">${getCatIcon(b.category,'out')}</span>${esc(ci.l)}</span>
             <span style="font-size:12px;color:${b.pct>=1?'var(--red)':'var(--gold)'};font-weight:700">${rp(b.spent)} / ${rp(b.limit)}</span>
           </div>
           <div class="prog"><div class="prog-f" style="width:${Math.min(b.pct*100,100).toFixed(0)}%;background:${b.pct>=1?'var(--red)':'var(--gold)'}"></div></div>
@@ -752,8 +791,12 @@ function trxLI(t){
   const isTransfer=t.category==='transfer';
   const valColor=isTransfer?'var(--muted)':t.type==='in'?'var(--green)':'var(--red)';
   const valPrefix=isTransfer?(t.type==='out'?'→':'←'):t.type==='in'?'+':'-';
+  const icoColor=isTransfer?'var(--muted)':t.type==='in'?'var(--green)':'var(--red)';
+  const icoSvg=isTransfer
+    ?`<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="4" fill="currentColor" opacity=".1"/><path d="M8 7L12 3L16 7M16 17L12 21L8 17" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><line x1="12" y1="3" x2="12" y2="21" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg>`
+    :getCatIcon(t.category,t.type);
   return`<div class="li" style="cursor:pointer" onclick="openTrxEdit('${esc(t.id)}')">
-    <div class="li-ico ${isTransfer?'x':t.type==='in'?'g':'r'}">${ci.e}</div>
+    <div class="li-ico ${isTransfer?'x':t.type==='in'?'g':'r'}" style="color:${icoColor}">${icoSvg}</div>
     <div class="li-body">
       <div class="li-title">${esc(ci.l)}${t.note?` · ${esc(t.note)}`:''}</div>
       <div class="li-sub">${esc(w?.name||'—')} · ${fmtDS(t.date)}</div>
@@ -777,11 +820,40 @@ function pickCat(gridId,hiddenId,val){
   document.getElementById(hiddenId).value=val;
   document.querySelectorAll(`#${gridId} .cat-item`).forEach(el=>el.classList.toggle('on',el.dataset.val===val));
 }
+const CAT_ICONS_OUT={
+  makan:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M6 2V10C6 12 8 14 12 14C16 14 18 12 18 10V2Z" fill="currentColor" opacity=".15"/><path d="M6 2V10C6 12 8 14 12 14C16 14 18 12 18 10V2M12 14V22M8 2V6M12 2V8M16 2V6" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg>`,
+  transport:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M5 10H19L17 17H7L5 10Z" fill="currentColor" opacity=".15"/><path d="M5 10H19L17 17H7L5 10ZM5 10L7 4H17L19 10" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9" cy="18" r="2" stroke="currentColor" stroke-width="1.75"/><circle cx="15" cy="18" r="2" stroke="currentColor" stroke-width="1.75"/></svg>`,
+  belanja:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M6 7H18L17 19H7L6 7Z" fill="currentColor" opacity=".15"/><path d="M3 5H5L6 7H18L17 19H7L6 7" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 11C9 12.7 10.3 14 12 14C13.7 14 15 12.7 15 11" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg>`,
+  hiburan:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="3" fill="currentColor" opacity=".15"/><rect x="3" y="5" width="18" height="14" rx="3" stroke="currentColor" stroke-width="1.75"/><path d="M10 9L15 12L10 15V9Z" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/></svg>`,
+  kesehatan:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="16" height="16" rx="4" fill="currentColor" opacity=".15"/><rect x="4" y="4" width="16" height="16" rx="4" stroke="currentColor" stroke-width="1.75"/><path d="M12 8V16M8 12H16" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg>`,
+  tagihan:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="5" y="2" width="14" height="20" rx="2" fill="currentColor" opacity=".15"/><rect x="5" y="2" width="14" height="20" rx="2" stroke="currentColor" stroke-width="1.75"/><path d="M9 8H15M9 12H15M9 16H12" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg>`,
+  pendidikan:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 3L22 8L12 13L2 8Z" fill="currentColor" opacity=".15"/><path d="M12 3L22 8L12 13L2 8L12 3Z" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/><path d="M6 10.5V17C6 17 8 19 12 19C16 19 18 17 18 17V10.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg>`,
+  fashion:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M8 2L4 7H8V20H16V7H20L16 2L14 4L12 2L10 4L8 2Z" fill="currentColor" opacity=".15"/><path d="M8 2L4 7H8V20H16V7H20L16 2L14 4L12 2L10 4L8 2Z" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" stroke-linecap="round"/></svg>`,
+  elektronik:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="4" y="6" width="16" height="12" rx="2" fill="currentColor" opacity=".15"/><rect x="4" y="6" width="16" height="12" rx="2" stroke="currentColor" stroke-width="1.75"/><path d="M8 20H16M12 18V20" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg>`,
+  olahraga:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" fill="currentColor" opacity=".15"/><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.75"/><path d="M4.9 9.5H19.1M4.9 14.5H19.1M8 4.5L10 19.5M14 4.5L16 19.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+  sosial:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="7" r="4" fill="currentColor" opacity=".15"/><circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="1.75"/><path d="M3 20C3 16.7 5.7 14 9 14" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/><path d="M16 18L18 20L22 16" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  lainnya:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" fill="currentColor" opacity=".15"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.75"/><path d="M12 8V12L14 14" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+};
+const CAT_ICONS_IN={
+  gaji:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="4" y="6" width="16" height="13" rx="2" fill="currentColor" opacity=".15"/><rect x="4" y="6" width="16" height="13" rx="2" stroke="currentColor" stroke-width="1.75"/><path d="M4 10H20M8 6V4H16V6" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/><circle cx="12" cy="15" r="2" stroke="currentColor" stroke-width="1.75"/></svg>`,
+  freelance:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="14" rx="2" fill="currentColor" opacity=".15"/><rect x="3" y="4" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.75"/><path d="M8 8L10 12L8 16M12 16H16" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  bisnis:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M3 9H21V19C21 20.1 20.1 21 19 21H5C3.9 21 3 20.1 3 19V9Z" fill="currentColor" opacity=".15"/><path d="M3 9H21V19C21 20.1 20.1 21 19 21H5C3.9 21 3 20.1 3 19V9ZM8 9V7C8 5.9 8.9 5 10 5H14C15.1 5 16 5.9 16 7V9" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  investasi:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M3 20H21V16L15 10L11 14L7 10L3 16Z" fill="currentColor" opacity=".15"/><path d="M3 17L9 11L13 15L21 7M17 7H21V11" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  hadiah:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="4" y="10" width="16" height="11" rx="1" fill="currentColor" opacity=".15"/><rect x="4" y="10" width="16" height="11" rx="1" stroke="currentColor" stroke-width="1.75"/><path d="M4 10H20V13H4V10ZM12 10V21" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/><path d="M12 6C12 6 10 4 8 5C6 6 6 8 8 9H12M12 6C12 6 14 4 16 5C18 6 18 8 16 9H12" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg>`,
+  bonus:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="currentColor" opacity=".15"/><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/></svg>`,
+  jual:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 4H20L18 16H6L4 4Z" fill="currentColor" opacity=".15"/><path d="M4 4H20L18 16H6L4 4ZM2 2H4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><circle cx="10" cy="20" r="1.5" stroke="currentColor" stroke-width="1.75"/><circle cx="16" cy="20" r="1.5" stroke="currentColor" stroke-width="1.75"/></svg>`,
+  lainnya:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" fill="currentColor" opacity=".15"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.75"/><path d="M12 7V12M12 16V16.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`,
+};
+function getCatIcon(v,type){
+  const icons=type==='in'?CAT_ICONS_IN:CAT_ICONS_OUT;
+  return icons[v]||`<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" fill="currentColor" opacity=".15"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.75"/></svg>`;
+}
 function renderCatGrid(gridId,cats,hiddenId){
   const cur=document.getElementById(hiddenId).value;
+  const type=hiddenId==='bf-cat'?'out':(hiddenId==='tf-cat'?curTrxType:'out'); // bf-cat always out
   document.getElementById(gridId).innerHTML=cats.map(c=>`
     <div class="cat-item${cur===c.v?' on':''}" data-val="${c.v}" onclick="pickCat('${gridId}','${hiddenId}','${c.v}')">
-      ${c.e}<div>${c.l}</div>
+      ${getCatIcon(c.v,type)}<div>${c.l}</div>
     </div>`).join('');
 }
 function openTrxAdd(){
@@ -844,7 +916,8 @@ async function saveTrx(){
   if(oldTrx?.category==='transfer'&&oldTrx.wallet_id!==wid){
     toast('Wallet transaksi transfer tidak bisa dipindah','e');return;
   }
-  const data={user_id:S.user.id,wallet_id:wid,type:curTrxType,amount:amt,category:cat,date,note:document.getElementById('tf-note').value.trim()||null};
+  const isEditTransfer=oldTrx?.category==='transfer';
+  const data={user_id:S.user.id,wallet_id:wid,type:isEditTransfer?oldTrx.type:curTrxType,amount:amt,category:isEditTransfer?'transfer':cat,date,note:document.getElementById('tf-note').value.trim()||null};
   try{
     const w=S.wallets.find(x=>x.id===wid);
     if(!w){toast('Dompet tidak ditemukan','e');return;}
@@ -898,9 +971,10 @@ async function delTrx(){
       // Reverse saldo wallet utama
       const w=S.wallets.find(x=>x.id===t.wallet_id);
       if(w){
+        w.balance=toNum(w.balance);const tAmt=toNum(t.amount);
         let newBal=w.balance;
-        if(t.type==='in')newBal-=t.amount;
-        else newBal+=t.amount;
+        if(t.type==='in')newBal-=tAmt;
+        else newBal+=tAmt;
         await dbU(`dk_wallets?id=eq.${w.id}`,{balance:newBal});
         w.balance=newBal;
       }
@@ -908,9 +982,10 @@ async function delTrx(){
       if(isTransfer&&t.to_wallet_id){
         const wPair=S.wallets.find(x=>x.id===t.to_wallet_id);
         if(wPair){
+          wPair.balance=toNum(wPair.balance);
           let pairBal=wPair.balance;
-          if(t.type==='out')pairBal-=t.amount; // reverse penerimaan di pasangan
-          else pairBal+=t.amount;
+          if(t.type==='out')pairBal-=tAmt;
+          else pairBal+=tAmt;
           await dbU(`dk_wallets?id=eq.${wPair.id}`,{balance:pairBal});
           wPair.balance=pairBal;
         }
@@ -955,7 +1030,7 @@ function rBudget(){
     return`<div class="card mt8" style="cursor:pointer" onclick="openBudgetEdit('${b.id}')">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
         <div style="display:flex;align-items:center;gap:8px">
-          <div style="font-size:24px">${ci.e}</div>
+          <div style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:${color};flex-shrink:0">${getCatIcon(b.category,'out')}</div>
           <div><div style="font-weight:700;font-size:14px">${ci.l}</div><div style="font-size:11px;color:var(--muted)">${rp(spent)} dari ${rp(b.limit)}</div></div>
         </div>
         <div class="badge ${pct>=1?'r':pct>=0.7?'gold':'g'}">${(pct*100).toFixed(0)}%</div>
@@ -1046,7 +1121,7 @@ function openSavingDetail(id){
   const pct=s.target?Math.min(s.saved/s.target,1):0;
   document.getElementById('sh-svd-t').textContent=`${s.emoji} ${s.name}`;
   const deadlineStr=s.deadline?`<div style="font-size:12px;color:var(--muted);margin-top:4px">🗓️ Deadline: ${new Date(s.deadline).toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'})}</div>`:'';
-  const noteStr=s.note?`<div style="margin-top:16px;background:var(--card2);border-radius:12px;padding:12px;font-size:13px;color:var(--text2);line-height:1.6;text-align:left">${s.note}</div>`:'';
+  const noteStr=s.note?`<div style="margin-top:16px;background:var(--card2);border-radius:12px;padding:12px;font-size:13px;color:var(--text2);line-height:1.6;text-align:left">${esc(s.note)}</div>`:'';
   document.getElementById('sh-svd-body').innerHTML=`
     <div style="text-align:center;padding:16px 0 8px">
       <div style="font-size:48px;margin-bottom:8px">${s.emoji}</div>
@@ -1086,8 +1161,9 @@ function openSavingTopup(id){
     const sisa=s.target-s.saved;
     if(n>sisa){toast(`Maksimal tambah ${rp(sisa)}`,'e');return}
     try{
-      await dbU(`dk_savings?id=eq.${id}`,{saved:s.saved+n});
-      s.saved+=n;m.remove();csh('sh-svd');
+      const newSaved=toNum(s.saved)+n;
+      await dbU(`dk_savings?id=eq.${id}`,{saved:newSaved});
+      s.saved=newSaved;m.remove();csh('sh-svd');
       toast(s.saved>=s.target?'Target tercapai! 🎉':'Tabungan bertambah! 💪','ok');
       rSaving();rHome();
     }catch(err){toast('Gagal: '+err.message,'e')}
@@ -1128,7 +1204,9 @@ function pickSavEmoji(e){
   document.querySelectorAll('#sh-svf .cat-item').forEach(el=>el.classList.toggle('on',el.dataset.emoji===e));
 }
 function pickWalletEmoji(e){
+  if(!e||!e.trim())return;
   document.getElementById('wf-emoji').value=e;
+  const inp=document.getElementById('wf-emoji-input');if(inp&&inp!==document.activeElement)inp.value=e;
   document.querySelectorAll('#wf-emoji-grid .cat-item').forEach(el=>el.classList.toggle('on',el.dataset.emoji===e));
 }
 async function saveSaving(){
@@ -1162,6 +1240,7 @@ function openWalletAdd(){
   document.getElementById('wf-name').value='';
   document.getElementById('wf-bal').value='';
   document.getElementById('wf-emoji').value='💵';
+  const ei=document.getElementById('wf-emoji-input');if(ei)ei.value='';
   document.getElementById('wf-del').style.display='none';
   document.getElementById('sh-wf-t').textContent='Tambah Dompet';
   document.getElementById('wf-bal-lbl').textContent='Saldo Awal (Rp)';
@@ -1177,6 +1256,7 @@ function openWalletEdit(id){
   document.getElementById('wf-del').style.display='';
   document.getElementById('sh-wf-t').textContent='Edit Dompet';
   document.getElementById('wf-bal-lbl').textContent='Saldo Saat Ini (Rp)';
+  const ei2=document.getElementById('wf-emoji-input');if(ei2)ei2.value=w.emoji||'';
   document.querySelectorAll('#wf-emoji-grid .cat-item').forEach(el=>el.classList.toggle('on',el.dataset.emoji===w.emoji));
   osh('sh-wf');
 }
@@ -1188,7 +1268,7 @@ async function saveWallet(){
   const emoji=document.getElementById('wf-emoji').value||'💵';
   // Saat edit: kalau field balance kosong, pertahankan saldo lama
   const existingBal=id?S.wallets.find(w=>w.id===id)?.balance||0:0;
-  const balance=balField!==''?parseFloat(balField)||0:existingBal;
+  const balance=balField!==''?toNum(balField):toNum(existingBal);
   const data={name,emoji,balance,user_id:S.user.id};
   try{
     if(id){await dbU(`dk_wallets?id=eq.${id}`,data);const i=S.wallets.findIndex(w=>w.id===id);if(i!==-1)S.wallets[i]={...S.wallets[i],...data}}
@@ -1262,7 +1342,7 @@ function rSet(){
   document.getElementById('set-user').textContent=S.user?.username||'';
   document.getElementById('set-wallets').innerHTML=!S.wallets.length?`<div style="color:var(--muted);font-size:13px;padding:8px 0">Belum ada dompet</div>`:
     S.wallets.map(w=>`<div class="li" style="cursor:pointer" onclick="openWalletEdit('${esc(w.id)}')">
-      <div class="li-ico g">${esc(w.emoji||'💵')}</div>
+      <div class="li-ico g" style="color:var(--green);font-size:18px">${esc(w.emoji||'💵')}</div>
       <div class="li-body"><div class="li-title">${esc(w.name)}</div><div class="li-sub">${rp(w.balance)}</div></div>
       <span style="color:var(--muted)">›</span></div>`).join('');
   const todayDay=new Date().getDate();
@@ -1270,12 +1350,16 @@ function rSet(){
     S.routines.map(r=>{
       const isDue=r.day===todayDay;
       return`<div class="li">
-        <div class="li-ico ${r.type==='in'?'g':'r'}" style="cursor:pointer" onclick="openRoutineEdit('${esc(r.id)}')">${r.type==='in'?'💰':'💸'}</div>
+        <div class="li-ico ${r.type==='in'?'g':'r'}" style="cursor:pointer;color:${r.type==='in'?'var(--green)':'var(--red)'}" onclick="openRoutineEdit('${esc(r.id)}')">${r.type==='in'
+          ?`<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="4" y="6" width="16" height="13" rx="2" fill="currentColor" opacity=".2"/><rect x="4" y="6" width="16" height="13" rx="2" stroke="currentColor" stroke-width="1.75"/><path d="M4 10H20" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/><circle cx="12" cy="15" r="2" stroke="currentColor" stroke-width="1.75"/></svg>`
+          :`<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="5" y="2" width="14" height="20" rx="2" fill="currentColor" opacity=".2"/><rect x="5" y="2" width="14" height="20" rx="2" stroke="currentColor" stroke-width="1.75"/><path d="M9 8H15M9 12H15M9 16H12" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg>`
+        }</div>
         <div class="li-body" style="cursor:pointer" onclick="openRoutineEdit('${esc(r.id)}')"><div class="li-title">${esc(r.name)}</div><div class="li-sub">Tgl ${r.day} tiap bulan · ${rp(r.amount)}</div></div>
         <button id="rb-apply-${esc(r.id)}" onclick="applyRoutine('${esc(r.id)}')" style="font-size:11px;font-weight:700;padding:6px 12px;border-radius:8px;border:none;cursor:pointer;background:${isDue?'var(--accent)':'var(--card2)'};color:${isDue?'#0d0d0d':'var(--muted)'};font-family:'Plus Jakarta Sans',sans-serif;flex-shrink:0">Terapkan</button>
       </div>`;
     }).join('');
   document.getElementById('dark-tog').checked=document.documentElement.getAttribute('data-theme')==='dark';
+  if(document.getElementById('set-out-cats'))rSetCats();
 }
 function openRoutineEdit(id){
   const r=S.routines.find(x=>x.id===id);if(!r)return;
@@ -1317,6 +1401,7 @@ async function saveTransfer(){
   const wFrom=S.wallets.find(w=>w.id===fromId);
   const wTo=S.wallets.find(w=>w.id===toId);
   if(!wFrom||!wTo)return;
+  wFrom.balance=toNum(wFrom.balance);wTo.balance=toNum(wTo.balance);
   if(wFrom.balance<amt){toast('Saldo tidak cukup','e');return}
   const note=document.getElementById('tr-note').value.trim()||null;
   try{
@@ -1400,9 +1485,10 @@ async function applyRoutine(id){
   const btn=document.getElementById('rb-apply-'+id);
   if(btn){btn.style.opacity='0.6';btn.disabled=true;}
   try{
-    const newBal=r.type==='in'?w.balance+r.amount:w.balance-r.amount;
+    w.balance=toNum(w.balance);const rAmt=toNum(r.amount);
+  const newBal=r.type==='in'?w.balance+rAmt:w.balance-rAmt;
     const trxId=nuid();
-    const trxData={id:trxId,user_id:S.user.id,wallet_id:r.wallet_id,type:r.type,amount:r.amount,category:'lainnya',date:todayD(),note:r.name};
+    const trxData={id:trxId,user_id:S.user.id,wallet_id:r.wallet_id,type:r.type,amount:rAmt,category:'lainnya',date:todayD(),note:r.name};
     const res=await dbP('dk_trx',trxData);
     const trx=(Array.isArray(res)&&res.length)?res[0]:trxData;
     await dbU(`dk_wallets?id=eq.${r.wallet_id}`,{balance:newBal});
@@ -1559,6 +1645,90 @@ function downloadPDF(htmlContent,type,bulan){
   </style></head><body>${htmlContent}
   <script>window.onload=function(){window.print();}<\/script></body></html>`);
   win.document.close();
+}
+
+// ── CATEGORY MANAGEMENT ──────────────────────────────
+function rSetCats(){
+  ['out','in'].forEach(type=>{
+    const cats=type==='out'?OUT_CATS:IN_CATS;
+    const el=document.getElementById(`set-${type}-cats`);
+    if(!el)return;
+    el.innerHTML=!cats.length?`<div style="color:var(--muted);font-size:13px;padding:8px 0">Belum ada kategori</div>`:
+      cats.map(c=>`<div class="li">
+        <div class="li-ico x" style="font-size:18px">${esc(c.e)}</div>
+        <div class="li-body"><div class="li-title">${esc(c.l)}</div></div>
+        <div style="display:flex;gap:6px">
+          <button onclick="openCatEdit('${type}','${esc(c.v)}')" style="font-size:11px;font-weight:600;padding:5px 10px;border-radius:8px;background:var(--card2);border:1px solid var(--border);cursor:pointer;color:var(--text2);font-family:'DM Sans',sans-serif">Edit</button>
+          ${c.v==='lainnya'?'':`<button onclick="deleteCat('${type}','${esc(c.v)}')" style="font-size:11px;font-weight:600;padding:5px 10px;border-radius:8px;background:var(--rl);border:none;cursor:pointer;color:var(--red);font-family:'DM Sans',sans-serif">Hapus</button>`}
+        </div>
+      </div>`).join('');
+  });
+}
+function openCatAdd(type){
+  showCatForm(type,null);
+}
+function openCatEdit(type,v){
+  const cats=type==='out'?OUT_CATS:IN_CATS;
+  const cat=cats.find(c=>c.v===v);
+  if(!cat)return;
+  showCatForm(type,cat);
+}
+function showCatForm(type,cat){
+  const isEdit=!!cat;
+  const m=document.createElement('div');
+  m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:9999;display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(8px)';
+  m.innerHTML=`<div style="background:var(--card);border-radius:var(--radius-lg) var(--radius-lg) 0 0;width:100%;max-width:430px;padding:20px 20px 48px;border:1px solid var(--border);border-bottom:none">
+    <div style="width:32px;height:3px;background:var(--border2);border-radius:2px;margin:0 auto 16px"></div>
+    <div style="font-size:17px;font-weight:700;margin-bottom:16px;letter-spacing:-.4px">${isEdit?'Edit':'Tambah'} Kategori ${type==='out'?'Pengeluaran':'Pemasukan'}</div>
+    <div style="display:flex;gap:10px;margin-bottom:14px">
+      <div style="flex-shrink:0">
+        <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:7px">Emoji</div>
+        <input type="text" id="cf-emoji" value="${esc(cat?.e||'💸')}" maxlength="2" style="width:56px;text-align:center;font-size:22px;padding:10px 8px;background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;outline:none">
+      </div>
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:7px">Nama Kategori</div>
+        <input type="text" id="cf-label" value="${esc(cat?.l||'')}" placeholder="cth: Rokok, Pulsa, Kopi" style="width:100%;padding:12px 14px;background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none">
+      </div>
+    </div>
+    <button id="cf-save" style="width:100%;padding:14px;border-radius:var(--radius-sm);font-size:15px;font-weight:600;background:var(--accent);color:var(--bg);border:none;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:8px">${isEdit?'Simpan Perubahan':'Tambah Kategori'}</button>
+    <button id="cf-cancel" style="width:100%;padding:14px;border-radius:var(--radius-sm);font-size:14px;font-weight:600;background:var(--card2);color:var(--muted);border:1px solid var(--border);cursor:pointer;font-family:'DM Sans',sans-serif">Batal</button>
+  </div>`;
+  document.body.appendChild(m);
+  m.querySelector('#cf-cancel').onclick=()=>m.remove();
+  m.onclick=(e)=>{if(e.target===m)m.remove()};
+  m.querySelector('#cf-save').onclick=()=>{
+    const label=m.querySelector('#cf-label').value.trim();
+    const emoji=m.querySelector('#cf-emoji').value.trim()||'💸';
+    if(!label){toast('Nama kategori wajib diisi','e');return}
+    const cats=type==='out'?OUT_CATS:IN_CATS;
+    if(isEdit){
+      const idx=cats.findIndex(c=>c.v===cat.v);
+      if(idx!==-1){cats[idx]={...cats[idx],e:emoji,l:label}}
+    }else{
+      // Buat slug dari label
+      const slug=label.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'').substring(0,20)||`cat-${Date.now()}`;
+      // Cegah duplikat
+      if(cats.find(c=>c.v===slug)){toast('Kategori sudah ada','e');return}
+      // Insert sebelum 'lainnya'
+      const lainIdx=cats.findIndex(c=>c.v==='lainnya');
+      const newCat={v:slug,e:emoji,l:label};
+      if(lainIdx!==-1)cats.splice(lainIdx,0,newCat);
+      else cats.push(newCat);
+    }
+    saveCats();
+    m.remove();
+    rSetCats();
+    toast(isEdit?'Kategori diperbarui':'Kategori ditambahkan','ok');
+  };
+}
+function deleteCat(type,v){
+  const cats=type==='out'?OUT_CATS:IN_CATS;
+  confirmSheet('Hapus kategori ini?','Transaksi lama dengan kategori ini tidak terpengaruh.',()=>{
+    const idx=cats.findIndex(c=>c.v===v);
+    if(idx!==-1)cats.splice(idx,1);
+    saveCats();rSetCats();
+    toast('Kategori dihapus','ok');
+  });
 }
 
 // ── INIT ──────────────────────────────────────────────
