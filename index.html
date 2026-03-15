@@ -301,6 +301,7 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
       <div class="card"><div class="sec-title" style="padding:0 0 8px">Akun</div>
         <div style="font-size:13px;color:var(--muted);margin-bottom:12px">Login sebagai <span id="set-user" style="color:var(--text);font-weight:700"></span></div>
         <button class="btn btn-s" onclick="exportRingkasan()">📋 Salin Ringkasan Bulan Ini</button>
+        <button class="btn btn-s mt8" onclick="openExportPDF()" style="color:var(--red)">📄 Ekspor PDF</button>
       </div>
     </div>
   </div>
@@ -1418,6 +1419,148 @@ function flashBalance(){
   el.style.opacity='0.4';
   setTimeout(()=>{el.style.opacity='1';},300);
 }
+// ── EXPORT PDF ───────────────────────────────────────
+function openExportPDF(){
+  // Build modal
+  const m=document.createElement('div');
+  m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:9999;display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(8px)';
+  m.innerHTML=`<div style="background:var(--card);border-radius:var(--radius-lg) var(--radius-lg) 0 0;width:100%;max-width:430px;padding:20px 20px 40px;border:1px solid var(--border);border-bottom:none">
+    <div style="width:32px;height:3px;background:var(--border2);border-radius:2px;margin:0 auto 16px"></div>
+    <div style="font-size:17px;font-weight:700;letter-spacing:-.4px;margin-bottom:4px">📄 Ekspor PDF</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:20px">Pilih konten yang ingin diekspor</div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px">
+      <label style="display:flex;align-items:center;gap:12px;padding:14px;background:var(--card2);border-radius:var(--radius-sm);cursor:pointer;border:1.5px solid var(--border)" id="pdf-opt-ringkasan">
+        <input type="radio" name="pdf-type" value="ringkasan" checked style="width:auto;background:none;border:none;padding:0;box-shadow:none">
+        <div><div style="font-size:14px;font-weight:600">Ringkasan Bulan Ini</div><div style="font-size:12px;color:var(--muted);margin-top:2px">Pemasukan, pengeluaran & per kategori</div></div>
+      </label>
+      <label style="display:flex;align-items:center;gap:12px;padding:14px;background:var(--card2);border-radius:var(--radius-sm);cursor:pointer;border:1.5px solid var(--border)" id="pdf-opt-trx">
+        <input type="radio" name="pdf-type" value="transaksi" style="width:auto;background:none;border:none;padding:0;box-shadow:none">
+        <div><div style="font-size:14px;font-weight:600">Semua Transaksi</div><div style="font-size:12px;color:var(--muted);margin-top:2px">Tabel lengkap semua riwayat transaksi</div></div>
+      </label>
+    </div>
+    <button id="pdf-preview-btn" style="width:100%;padding:14px;border-radius:var(--radius-sm);font-size:15px;font-weight:600;background:var(--accent);color:var(--bg);border:none;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:8px">Lihat Preview →</button>
+    <button id="pdf-cancel-btn" style="width:100%;padding:14px;border-radius:var(--radius-sm);font-size:14px;font-weight:600;background:var(--card2);color:var(--muted);border:1px solid var(--border);cursor:pointer;font-family:'DM Sans',sans-serif">Batal</button>
+  </div>`;
+  document.body.appendChild(m);
+
+  // Style selected radio
+  m.querySelectorAll('input[name=pdf-type]').forEach(r=>{
+    r.addEventListener('change',()=>{
+      m.querySelectorAll('label[id^=pdf-opt]').forEach(l=>l.style.borderColor='var(--border)');
+      r.closest('label').style.borderColor='var(--accent)';
+    });
+  });
+  m.querySelector('#pdf-opt-ringkasan').style.borderColor='var(--accent)';
+
+  m.querySelector('#pdf-cancel-btn').onclick=()=>m.remove();
+  m.onclick=(e)=>{if(e.target===m)m.remove()};
+  m.querySelector('#pdf-preview-btn').onclick=()=>{
+    const type=m.querySelector('input[name=pdf-type]:checked').value;
+    m.remove();
+    showPDFPreview(type);
+  };
+}
+
+function showPDFPreview(type){
+  const now=new Date();
+  const bulan=now.toLocaleDateString('id-ID',{month:'long',year:'numeric'});
+  const username=S.user?.username||'';
+
+  let htmlContent='';
+  if(type==='ringkasan'){
+    htmlContent=buildRingkasanHTML(now,bulan,username);
+  }else{
+    htmlContent=buildTrxHTML(bulan,username);
+  }
+
+  // Preview window
+  const prev=document.createElement('div');
+  prev.style.cssText='position:fixed;inset:0;background:var(--bg2);z-index:9999;display:flex;flex-direction:column';
+  prev.innerHTML=`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:var(--card);border-bottom:1px solid var(--border);flex-shrink:0">
+      <button id="prev-back" style="font-size:13px;font-weight:600;color:var(--muted);padding:8px 12px;background:var(--card2);border-radius:var(--radius-sm);border:1px solid var(--border);cursor:pointer;font-family:'DM Sans',sans-serif">← Kembali</button>
+      <div style="font-size:15px;font-weight:700;letter-spacing:-.3px">Preview PDF</div>
+      <button id="prev-download" style="font-size:13px;font-weight:600;color:var(--bg);background:var(--accent);padding:8px 16px;border-radius:var(--radius-sm);border:none;cursor:pointer;font-family:'DM Sans',sans-serif">⬇ Download</button>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:16px">
+      <div id="pdf-frame" style="background:#fff;border-radius:var(--radius);overflow:hidden;box-shadow:var(--sh2);max-width:600px;margin:0 auto">${htmlContent}</div>
+    </div>`;
+  document.body.appendChild(prev);
+
+  prev.querySelector('#prev-back').onclick=()=>{prev.remove();openExportPDF();};
+  prev.querySelector('#prev-download').onclick=()=>downloadPDF(htmlContent,type,bulan);
+}
+
+function buildRingkasanHTML(now,bulan,username){
+  const moTrx=S.trx.filter(t=>{const d=new Date(t.date);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();});
+  const moIn=moTrx.filter(t=>t.type==='in'&&t.category!=='transfer').reduce((a,t)=>a+t.amount,0);
+  const moOut=moTrx.filter(t=>t.type==='out'&&t.category!=='transfer').reduce((a,t)=>a+t.amount,0);
+  const selisih=moIn-moOut;
+  const bycat={};
+  moTrx.filter(t=>t.type==='out'&&t.category!=='transfer').forEach(t=>{if(!bycat[t.category])bycat[t.category]=0;bycat[t.category]+=t.amount;});
+  const catRows=Object.entries(bycat).sort((a,b)=>b[1]-a[1]).map(([k,v])=>{const ci=catInfo(k,'out');return`<tr><td style="padding:10px 16px;font-size:13px">${esc(ci.e)} ${esc(ci.l)}</td><td style="padding:10px 16px;font-size:13px;text-align:right;color:#dc2626;font-weight:600">${rp(v)}</td></tr>`;}).join('');
+  const walletRows=S.wallets.map(w=>`<tr><td style="padding:10px 16px;font-size:13px">${esc(w.emoji)} ${esc(w.name)}</td><td style="padding:10px 16px;font-size:13px;text-align:right;font-weight:600">${rp(w.balance)}</td></tr>`).join('');
+  return`<div style="font-family:system-ui,sans-serif;background:#fff;padding:32px">
+    <div style="border-bottom:2px solid #18181b;padding-bottom:16px;margin-bottom:24px">
+      <div style="font-size:22px;font-weight:700;letter-spacing:-.5px">💰 Duitku</div>
+      <div style="font-size:13px;color:#71717a;margin-top:4px">Ringkasan ${esc(bulan)} · @${esc(username)}</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:24px">
+      <div style="background:#f0fdf4;border-radius:12px;padding:16px"><div style="font-size:10px;font-weight:600;color:#059669;text-transform:uppercase;letter-spacing:.06em">Pemasukan</div><div style="font-size:20px;font-weight:700;color:#059669;margin-top:6px;letter-spacing:-.5px">${rp(moIn)}</div></div>
+      <div style="background:#fef2f2;border-radius:12px;padding:16px"><div style="font-size:10px;font-weight:600;color:#dc2626;text-transform:uppercase;letter-spacing:.06em">Pengeluaran</div><div style="font-size:20px;font-weight:700;color:#dc2626;margin-top:6px;letter-spacing:-.5px">${rp(moOut)}</div></div>
+      <div style="background:${selisih>=0?'#f0fdf4':'#fef2f2'};border-radius:12px;padding:16px"><div style="font-size:10px;font-weight:600;color:${selisih>=0?'#059669':'#dc2626'};text-transform:uppercase;letter-spacing:.06em">Selisih</div><div style="font-size:20px;font-weight:700;color:${selisih>=0?'#059669':'#dc2626'};margin-top:6px;letter-spacing:-.5px">${rp(selisih)}</div></div>
+    </div>
+    ${catRows?`<div style="margin-bottom:24px"><div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#71717a;margin-bottom:10px">Pengeluaran per Kategori</div><table style="width:100%;border-collapse:collapse;border:1px solid #e4e4e7;border-radius:12px;overflow:hidden"><thead><tr style="background:#f4f4f5"><th style="padding:10px 16px;font-size:11px;text-align:left;font-weight:600;color:#71717a;text-transform:uppercase;letter-spacing:.06em">Kategori</th><th style="padding:10px 16px;font-size:11px;text-align:right;font-weight:600;color:#71717a;text-transform:uppercase;letter-spacing:.06em">Total</th></tr></thead><tbody>${catRows}</tbody></table></div>`:''}
+    <div><div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#71717a;margin-bottom:10px">Saldo Dompet</div><table style="width:100%;border-collapse:collapse;border:1px solid #e4e4e7;border-radius:12px;overflow:hidden"><thead><tr style="background:#f4f4f5"><th style="padding:10px 16px;font-size:11px;text-align:left;font-weight:600;color:#71717a;text-transform:uppercase;letter-spacing:.06em">Dompet</th><th style="padding:10px 16px;font-size:11px;text-align:right;font-weight:600;color:#71717a;text-transform:uppercase;letter-spacing:.06em">Saldo</th></tr></thead><tbody>${walletRows}</tbody></table></div>
+    <div style="margin-top:24px;padding-top:16px;border-top:1px solid #e4e4e7;font-size:11px;color:#a1a1aa;text-align:center">Digenerate oleh Duitku · ${new Date().toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'})}</div>
+  </div>`;
+}
+
+function buildTrxHTML(bulan,username){
+  const rows=S.trx.filter(t=>t.category!=='transfer').map(t=>{
+    const ci=catInfo(t.category,t.type);
+    const w=S.wallets.find(x=>x.id===t.wallet_id);
+    const color=t.type==='in'?'#059669':'#dc2626';
+    const prefix=t.type==='in'?'+':'-';
+    return`<tr style="border-bottom:1px solid #f4f4f5">
+      <td style="padding:10px 12px;font-size:12px;color:#52525b">${fmtDS(t.date)}</td>
+      <td style="padding:10px 12px;font-size:12px">${esc(ci.e)} ${esc(ci.l)}</td>
+      <td style="padding:10px 12px;font-size:12px;color:#52525b;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(t.note||'—')}</td>
+      <td style="padding:10px 12px;font-size:12px;color:#52525b">${esc(w?.name||'—')}</td>
+      <td style="padding:10px 12px;font-size:12px;font-weight:600;text-align:right;color:${color}">${prefix}${rp(t.amount)}</td>
+    </tr>`;
+  }).join('');
+  return`<div style="font-family:system-ui,sans-serif;background:#fff;padding:32px">
+    <div style="border-bottom:2px solid #18181b;padding-bottom:16px;margin-bottom:24px">
+      <div style="font-size:22px;font-weight:700;letter-spacing:-.5px">💰 Duitku</div>
+      <div style="font-size:13px;color:#71717a;margin-top:4px">Riwayat Transaksi · @${esc(username)}</div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;border:1px solid #e4e4e7;border-radius:12px;overflow:hidden">
+      <thead><tr style="background:#f4f4f5">
+        <th style="padding:10px 12px;font-size:11px;text-align:left;font-weight:600;color:#71717a;text-transform:uppercase;letter-spacing:.06em">Tanggal</th>
+        <th style="padding:10px 12px;font-size:11px;text-align:left;font-weight:600;color:#71717a;text-transform:uppercase;letter-spacing:.06em">Kategori</th>
+        <th style="padding:10px 12px;font-size:11px;text-align:left;font-weight:600;color:#71717a;text-transform:uppercase;letter-spacing:.06em">Catatan</th>
+        <th style="padding:10px 12px;font-size:11px;text-align:left;font-weight:600;color:#71717a;text-transform:uppercase;letter-spacing:.06em">Dompet</th>
+        <th style="padding:10px 12px;font-size:11px;text-align:right;font-weight:600;color:#71717a;text-transform:uppercase;letter-spacing:.06em">Jumlah</th>
+      </tr></thead>
+      <tbody>${rows||'<tr><td colspan="5" style="padding:24px;text-align:center;color:#a1a1aa;font-size:13px">Belum ada transaksi</td></tr>'}</tbody>
+    </table>
+    <div style="margin-top:24px;padding-top:16px;border-top:1px solid #e4e4e7;font-size:11px;color:#a1a1aa;text-align:center">Digenerate oleh Duitku · ${new Date().toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'})}</div>
+  </div>`;
+}
+
+function downloadPDF(htmlContent,type,bulan){
+  const win=window.open('','_blank');
+  if(!win){toast('Izinkan popup untuk download PDF','e');return;}
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Duitku — ${esc(type==='ringkasan'?'Ringkasan':'Transaksi')} ${esc(bulan)}</title>
+  <style>
+    @media print{body{margin:0}@page{margin:16mm;size:A4}}
+    body{font-family:system-ui,sans-serif;background:#fff}
+  </style></head><body>${htmlContent}
+  <script>window.onload=function(){window.print();}<\/script></body></html>`);
+  win.document.close();
+}
+
 // ── INIT ──────────────────────────────────────────────
 async function init(){
   initTheme();
