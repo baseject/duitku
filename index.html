@@ -232,7 +232,7 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
   <!-- HOME -->
   <div class="page active" id="pg-home">
     <div class="hd">
-      <div class="wchip" onclick="openWalletSwitch()" style="background:var(--al);border:1.5px solid var(--accent);padding:7px 14px;gap:7px"><span>💳</span><span id="hd-wn" style="color:var(--accent);font-weight:800">Dompet</span><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent)"><path d="m6 9 6 6 6-6"/></svg></div>
+      <div class="wchip" onclick="openWalletSwitch()" style="background:var(--al);border:1.5px solid var(--accent);padding:7px 14px;gap:7px"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg><span id="hd-wn" style="color:var(--accent);font-weight:800">Dompet</span><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent)"><path d="m6 9 6 6 6-6"/></svg></div>
       <div class="hd-row">
         <button class="hd-btn" id="theme-btn" onclick="toggleTheme()"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg></button>
         <button class="hd-btn" onclick="navTo('settings')"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
@@ -348,27 +348,7 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 <div class="ovl" id="sh-wf"><div class="sheet" onclick="event.stopPropagation()"><div class="sh-handle"></div><div class="sh-hd"><div class="sh-title" id="sh-wf-t">Tambah Dompet</div><button class="sh-close" onclick="csh('sh-wf')"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div><div class="sh-body">
   <input type="hidden" id="wf-id">
   <div class="fg"><label class="fl">Nama</label><input id="wf-name" type="text" placeholder="cth: Kas, Dana, OVO, BCA"></div>
-  <div class="fg"><label class="fl">Emoji / Ikon</label>
-    <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:10px" id="wf-emoji-grid">
-      <div class="cat-item" data-emoji="💵" onclick="pickWalletEmoji('💵')">💵</div>
-      <div class="cat-item" data-emoji="💳" onclick="pickWalletEmoji('💳')">💳</div>
-      <div class="cat-item" data-emoji="🏦" onclick="pickWalletEmoji('🏦')">🏦</div>
-      <div class="cat-item" data-emoji="📱" onclick="pickWalletEmoji('📱')">📱</div>
-      <div class="cat-item" data-emoji="👛" onclick="pickWalletEmoji('👛')">👛</div>
-      <div class="cat-item" data-emoji="🏧" onclick="pickWalletEmoji('🏧')">🏧</div>
-      <div class="cat-item" data-emoji="💴" onclick="pickWalletEmoji('💴')">💴</div>
-      <div class="cat-item" data-emoji="🪙" onclick="pickWalletEmoji('🪙')">🪙</div>
-      <div class="cat-item" data-emoji="💎" onclick="pickWalletEmoji('💎')">💎</div>
-      <div class="cat-item" data-emoji="🏠" onclick="pickWalletEmoji('🏠')">🏠</div>
-      <div class="cat-item" data-emoji="🚗" onclick="pickWalletEmoji('🚗')">🚗</div>
-      <div class="cat-item" data-emoji="✈️" onclick="pickWalletEmoji('✈️')">✈️</div>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px">
-      <span style="font-size:12px;color:var(--muted);font-weight:500;flex-shrink:0">Atau ketik emoji:</span>
-      <input type="text" id="wf-emoji-input" placeholder="😀" maxlength="2" style="width:56px;text-align:center;font-size:20px;padding:8px" oninput="pickWalletEmoji(this.value||'💵')">
-    </div>
-    <input type="hidden" id="wf-emoji" value="💵">
-  </div>
+  <input type="hidden" id="wf-emoji" value="💳">
   <div class="fg"><label class="fl" id="wf-bal-lbl">Saldo Awal (Rp)</label><div class="pfx"><span>Rp</span><input id="wf-bal" type="number" placeholder="0" inputmode="numeric"></div></div>
   <div id="wf-del" style="display:none"><div class="dvd mt12"></div><button class="btn btn-d mt12" onclick="delWallet()">Hapus Dompet</button></div>
   <button class="btn btn-p mt16" onclick="saveWallet()">Simpan</button>
@@ -383,7 +363,7 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
   </div>
   <div class="fg"><label class="fl">Jumlah (Rp)</label><div class="pfx"><span>Rp</span><input id="tf-amt" type="number" placeholder="50000" inputmode="numeric"></div></div>
   <div class="fg"><label class="fl">Kategori</label>
-    <div class="cat-grid" id="tf-cats"></div>
+    <select id="tf-cat-sel" onchange="document.getElementById('tf-cat').value=this.value" style="width:100%"></select>
     <input type="hidden" id="tf-cat">
   </div>
   <div class="fg"><label class="fl">Dompet</label><select id="tf-wallet"></select></div>
@@ -397,7 +377,7 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 <div class="ovl" id="sh-bf"><div class="sheet" onclick="event.stopPropagation()"><div class="sh-handle"></div><div class="sh-hd"><div class="sh-title" id="sh-bf-t">Tambah Budget</div><button class="sh-close" onclick="csh('sh-bf')"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div><div class="sh-body">
   <input type="hidden" id="bf-id">
   <div class="fg"><label class="fl">Kategori</label>
-    <div class="cat-grid" id="bf-cats"></div>
+    <select id="bf-cat-sel" onchange="document.getElementById('bf-cat').value=this.value" style="width:100%"></select>
     <input type="hidden" id="bf-cat">
   </div>
   <div class="fg"><label class="fl">Limit per Bulan (Rp)</label><div class="pfx"><span>Rp</span><input id="bf-limit" type="number" placeholder="500000" inputmode="numeric"></div></div>
@@ -486,10 +466,12 @@ const DEFAULT_IN_CATS=[
 ];
 const OUT_CATS=[];
 const IN_CATS=[];
+function catKey(type){const uid=S.user?.id||'guest';return'dk_cats_'+type+'_'+uid;}
 function loadCats(){
   try{
-    const o=localStorage.getItem('dk_out_cats');
-    const i=localStorage.getItem('dk_in_cats');
+    const uid=S.user?.id||'guest';
+    const o=localStorage.getItem('dk_cats_out_'+uid)||localStorage.getItem('dk_out_cats');
+    const i=localStorage.getItem('dk_cats_in_'+uid)||localStorage.getItem('dk_in_cats');
     OUT_CATS.length=0;IN_CATS.length=0;
     (o?JSON.parse(o):DEFAULT_OUT_CATS).forEach(c=>OUT_CATS.push(c));
     (i?JSON.parse(i):DEFAULT_IN_CATS).forEach(c=>IN_CATS.push(c));
@@ -499,8 +481,9 @@ function loadCats(){
   }
 }
 function saveCats(){
-  localStorage.setItem('dk_out_cats',JSON.stringify(OUT_CATS));
-  localStorage.setItem('dk_in_cats',JSON.stringify(IN_CATS));
+  const uid=S.user?.id||'guest';
+  localStorage.setItem('dk_cats_out_'+uid,JSON.stringify(OUT_CATS));
+  localStorage.setItem('dk_cats_in_'+uid,JSON.stringify(IN_CATS));
 }
 loadCats();
 const catInfo=(v,type)=>{if(v==='transfer')return{e:'↕️',l:'Transfer'};const arr=type==='in'?IN_CATS:OUT_CATS;return arr.find(c=>c.v===v)||{e:'💸',l:v}};
@@ -599,6 +582,7 @@ async function authSubmit(){
 async function doLogin(usr){
   S.user={id:usr.id,username:usr.username};
   localStorage.setItem('dk_sess',JSON.stringify(S.user));
+  loadCats(); // reload cats per user setelah login
   await loadAll();
   document.getElementById('auth-page').classList.remove('active');
   document.getElementById('app').style.display='flex';
@@ -661,7 +645,7 @@ function openWalletSwitch(){
   const totalHtml=S.wallets.length>1?`<div style="background:var(--al);border-radius:12px;padding:10px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;font-weight:700;color:var(--muted)">Total Semua Dompet</span><span style="font-size:14px;font-weight:800;color:var(--accent)">${rp(totalBal)}</span></div>`:'';
   li.innerHTML=!S.wallets.length?`<div class="empty"><div class="empty-ico">💳</div><div class="empty-title">Belum ada dompet</div></div>`:
     totalHtml+S.wallets.map(w=>`<div class="w-item" onclick="switchWallet('${esc(w.id)}')">
-      <div class="w-ico" style="background:var(--gl)">${esc(w.emoji||'💵')}</div>
+      <div class="w-ico" style="background:var(--gl)"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></div>
       <div style="flex:1"><div style="font-weight:700;font-size:14px">${esc(w.name)}</div><div style="font-size:12px;color:var(--muted)">${rp(w.balance)}</div></div>
       ${w.id===S.wid?'<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent)"><path d="M20 6 9 17l-5-5"/></svg>':''}
     </div>`).join('');
@@ -824,7 +808,7 @@ function setTrxType(type){
   curTrxType=type;
   document.getElementById('tb-out').classList.toggle('on',type==='out');
   document.getElementById('tb-in').classList.toggle('on',type==='in');
-  renderCatGrid('tf-cats',type==='in'?IN_CATS:OUT_CATS,'tf-cat');
+  renderCatGrid('tf-cat-sel',type==='in'?IN_CATS:OUT_CATS,'tf-cat');
   document.getElementById('tf-cat').value='';
 }
 function pickCat(gridId,hiddenId,val){
@@ -860,12 +844,13 @@ function getCatIcon(v,type){
   return icons[v]||`<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" fill="currentColor" opacity=".15"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.75"/></svg>`;
 }
 function renderCatGrid(gridId,cats,hiddenId){
+  // gridId sekarang adalah select element id (bf-cat-sel / tf-cat-sel)
+  const selId=hiddenId==='bf-cat'?'bf-cat-sel':'tf-cat-sel';
   const cur=document.getElementById(hiddenId).value;
-  const type=hiddenId==='bf-cat'?'out':(hiddenId==='tf-cat'?curTrxType:'out'); // bf-cat always out
-  document.getElementById(gridId).innerHTML=cats.map(c=>`
-    <div class="cat-item${cur===c.v?' on':''}" data-val="${c.v}" onclick="pickCat('${gridId}','${hiddenId}','${c.v}')">
-      ${getCatIcon(c.v,type)}<div>${c.l}</div>
-    </div>`).join('');
+  const sel=document.getElementById(selId);
+  if(!sel)return;
+  sel.innerHTML='<option value="">Pilih kategori...</option>'+cats.map(c=>`<option value="${c.v}"${cur===c.v?' selected':''}>${c.l}</option>`).join('');
+  sel.onchange=()=>{document.getElementById(hiddenId).value=sel.value;};
 }
 function openTrxAdd(){
   if(!S.wid){toast('Tambah dompet dulu di Setelan','e');return}
@@ -880,9 +865,10 @@ function openTrxAdd(){
     document.getElementById(id).style.pointerEvents='';
     document.getElementById(id).style.opacity='';
   });
+  const tselR=document.getElementById('tf-cat-sel');if(tselR)tselR.disabled=false;
   setTrxType('out');
   const sel=document.getElementById('tf-wallet');
-  sel.innerHTML=S.wallets.map(w=>`<option value="${esc(w.id)}">${esc(w.emoji)} ${esc(w.name)} — ${rp(w.balance)}</option>`).join('');
+  sel.innerHTML=S.wallets.map(w=>`<option value="${esc(w.id)}">${esc(w.name)} — ${rp(w.balance)}</option>`).join('');
   sel.value=S.wid||S.wallets[0]?.id;
   osh('sh-tf');
 }
@@ -904,12 +890,13 @@ function openTrxEdit(id){
   document.getElementById('tb-out').style.opacity=isTransfer?'0.5':'';
   document.getElementById('tb-in').style.opacity=isTransfer?'0.5':'';
   if(isTransfer){
-    document.getElementById('tf-cats').innerHTML=`<div style="font-size:12px;color:var(--muted);padding:8px 0;grid-column:1/-1">⇅ Transaksi transfer — kategori tidak bisa diubah</div>`;
+    const tsel=document.getElementById('tf-cat-sel');if(tsel){tsel.innerHTML='<option value="transfer">Transfer</option>';tsel.disabled=true;}
   }else{
-    renderCatGrid('tf-cats',t.type==='in'?IN_CATS:OUT_CATS,'tf-cat');
+    const tselE=document.getElementById('tf-cat-sel');if(tselE)tselE.disabled=false;
+    renderCatGrid('tf-cat-sel',t.type==='in'?IN_CATS:OUT_CATS,'tf-cat');
   }
   const sel=document.getElementById('tf-wallet');
-  sel.innerHTML=S.wallets.map(w=>`<option value="${esc(w.id)}">${esc(w.emoji)} ${esc(w.name)}</option>`).join('');
+  sel.innerHTML=S.wallets.map(w=>`<option value="${esc(w.id)}">${esc(w.name)}</option>`).join('');
   sel.value=t.wallet_id;
   osh('sh-tf');
 }
@@ -970,6 +957,8 @@ async function saveTrx(){
       S.trx.unshift({...trx,amount:toNum(trx.amount)});
     }
     csh('sh-tf');toast(id?'Transaksi diperbarui':'Transaksi dicatat','ok');rHome();rTrx();flashBalance();
+    // Reload wallet balance dari DB untuk sinkronisasi
+    dbG(`dk_wallets?user_id=eq.${S.user.id}&deleted_at=is.null`).then(ws=>{if(ws&&ws.length){ws.forEach(dw=>{const sw=S.wallets.find(x=>x.id===dw.id);if(sw)sw.balance=toNum(dw.balance)});rHome();}}).catch(()=>{});
   }catch(err){toast('Gagal: '+err.message,'e')}
 }
 async function delTrx(){
@@ -1265,12 +1254,10 @@ function openWalletEdit(id){
   document.getElementById('wf-id').value=w.id;
   document.getElementById('wf-name').value=w.name;
   document.getElementById('wf-bal').value=w.balance;
-  document.getElementById('wf-emoji').value=w.emoji||'💵';
+  document.getElementById('wf-emoji').value='💳';
   document.getElementById('wf-del').style.display='';
   document.getElementById('sh-wf-t').textContent='Edit Dompet';
   document.getElementById('wf-bal-lbl').textContent='Saldo Saat Ini (Rp)';
-  const ei2=document.getElementById('wf-emoji-input');if(ei2)ei2.value=w.emoji||'';
-  document.querySelectorAll('#wf-emoji-grid .cat-item').forEach(el=>el.classList.toggle('on',el.dataset.emoji===w.emoji));
   osh('sh-wf');
 }
 async function saveWallet(){
@@ -1322,7 +1309,7 @@ function openRoutineAdd(){
   document.getElementById('sh-rf-t').textContent='Tambah Rutin';
   setRoutineType('out');
   const sel=document.getElementById('rf-wallet');
-  sel.innerHTML=S.wallets.map(w=>`<option value="${esc(w.id)}">${esc(w.emoji)} ${esc(w.name)}</option>`).join('');
+  sel.innerHTML=S.wallets.map(w=>`<option value="${esc(w.id)}">${esc(w.name)}</option>`).join('');
   osh('sh-rf');
 }
 async function saveRoutine(){
@@ -1355,7 +1342,7 @@ function rSet(){
   document.getElementById('set-user').textContent=S.user?.username||'';
   document.getElementById('set-wallets').innerHTML=!S.wallets.length?`<div style="color:var(--muted);font-size:13px;padding:8px 0">Belum ada dompet</div>`:
     S.wallets.map(w=>`<div class="li" style="cursor:pointer" onclick="openWalletEdit('${esc(w.id)}')">
-      <div class="li-ico g" style="color:var(--green);font-size:18px">${esc(w.emoji||'💵')}</div>
+      <div class="li-ico g" style="color:var(--green);font-size:18px"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></div>
       <div class="li-body"><div class="li-title">${esc(w.name)}</div><div class="li-sub">${rp(w.balance)}</div></div>
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted)"><path d="m9 18 6-6-6-6"/></svg></div>`).join('');
   const todayDay=new Date().getDate();
@@ -1384,7 +1371,7 @@ function openRoutineEdit(id){
   document.getElementById('sh-rf-t').textContent='Edit Rutin';
   setRoutineType(r.type);
   const sel=document.getElementById('rf-wallet');
-  sel.innerHTML=S.wallets.map(w=>`<option value="${esc(w.id)}">${esc(w.emoji)} ${esc(w.name)}</option>`).join('');
+  sel.innerHTML=S.wallets.map(w=>`<option value="${esc(w.id)}">${esc(w.name)}</option>`).join('');
   sel.value=r.wallet_id;
   osh('sh-rf');
 }
@@ -1393,7 +1380,7 @@ function openRoutineEdit(id){
 // ── TRANSFER ──────────────────────────────────────────
 function openTransfer(){
   if(S.wallets.length<2){toast('Butuh minimal 2 dompet untuk transfer','e');return}
-  const opts=S.wallets.map(w=>`<option value="${esc(w.id)}">${esc(w.emoji)} ${esc(w.name)} — ${rp(w.balance)}</option>`).join('');
+  const opts=S.wallets.map(w=>`<option value="${esc(w.id)}">${esc(w.name)} — ${rp(w.balance)}</option>`).join('');
   document.getElementById('tr-from').innerHTML=opts;
   document.getElementById('tr-to').innerHTML=opts;
   document.getElementById('tr-from').value=S.wid||S.wallets[0].id;
@@ -1472,7 +1459,7 @@ function exportRingkasan(){
     bycat[t.category]+=toNum(t.amount);
   });
   const bulan=now.toLocaleDateString('id-ID',{month:'long',year:'numeric'});
-  const walletLines=S.wallets.map(w=>`  ${w.emoji} ${w.name}: ${rp(w.balance)}`).join('\n');
+  const walletLines=S.wallets.map(w=>`  ${w.name}: ${rp(w.balance)}`).join('\n');
   const catLines=Object.entries(bycat).sort((a,b)=>b[1]-a[1]).map(([k,v])=>{const ci=catInfo(k,'out');return`  ${ci.e} ${ci.l}: ${rp(v)}`;}).join('\n');
   const text=`📊 Ringkasan Duitku — ${bulan}\n\n`+
     `💰 Pemasukan: ${rp(moIn)}\n`+
@@ -1598,7 +1585,7 @@ function buildRingkasanHTML(now,bulan,username){
   const bycat={};
   moTrx.filter(t=>t.type==='out'&&t.category!=='transfer').forEach(t=>{if(!bycat[t.category])bycat[t.category]=0;bycat[t.category]+=toNum(t.amount);});
   const catRows=Object.entries(bycat).sort((a,b)=>b[1]-a[1]).map(([k,v])=>{const ci=catInfo(k,'out');return`<tr><td style="padding:10px 16px;font-size:13px">${esc(ci.e)} ${esc(ci.l)}</td><td style="padding:10px 16px;font-size:13px;text-align:right;color:#dc2626;font-weight:600">${rp(v)}</td></tr>`;}).join('');
-  const walletRows=S.wallets.map(w=>`<tr><td style="padding:10px 16px;font-size:13px">${esc(w.emoji)} ${esc(w.name)}</td><td style="padding:10px 16px;font-size:13px;text-align:right;font-weight:600">${rp(w.balance)}</td></tr>`).join('');
+  const walletRows=S.wallets.map(w=>`<tr><td style="padding:10px 16px;font-size:13px">${esc(w.name)}</td><td style="padding:10px 16px;font-size:13px;text-align:right;font-weight:600">${rp(w.balance)}</td></tr>`).join('');
   return`<div style="font-family:system-ui,sans-serif;background:#fff;padding:32px">
     <div style="border-bottom:2px solid #18181b;padding-bottom:16px;margin-bottom:24px">
       <div style="font-size:22px;font-weight:700;letter-spacing:-.5px">💰 Duitku</div>
@@ -1668,7 +1655,7 @@ function rSetCats(){
     if(!el)return;
     el.innerHTML=!cats.length?`<div style="color:var(--muted);font-size:13px;padding:8px 0">Belum ada kategori</div>`:
       cats.map(c=>`<div class="li">
-        <div class="li-ico x" style="font-size:18px">${esc(c.e)}</div>
+        <div class="li-ico x">${getCatIcon(c.v,type)}</div>
         <div class="li-body"><div class="li-title">${esc(c.l)}</div></div>
         <div style="display:flex;gap:6px">
           <button onclick="openCatEdit('${type}','${esc(c.v)}')" style="font-size:11px;font-weight:600;padding:5px 10px;border-radius:8px;background:var(--card2);border:1px solid var(--border);cursor:pointer;color:var(--text2);font-family:'DM Sans',sans-serif">Edit</button>
@@ -1693,15 +1680,9 @@ function showCatForm(type,cat){
   m.innerHTML=`<div style="background:var(--card);border-radius:var(--radius-lg) var(--radius-lg) 0 0;width:100%;max-width:430px;padding:20px 20px 48px;border:1px solid var(--border);border-bottom:none">
     <div style="width:32px;height:3px;background:var(--border2);border-radius:2px;margin:0 auto 16px"></div>
     <div style="font-size:17px;font-weight:700;margin-bottom:16px;letter-spacing:-.4px">${isEdit?'Edit':'Tambah'} Kategori ${type==='out'?'Pengeluaran':'Pemasukan'}</div>
-    <div style="display:flex;gap:10px;margin-bottom:14px">
-      <div style="flex-shrink:0">
-        <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:7px">Emoji</div>
-        <input type="text" id="cf-emoji" value="${esc(cat?.e||'💸')}" maxlength="2" style="width:56px;text-align:center;font-size:22px;padding:10px 8px;background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;outline:none">
-      </div>
-      <div style="flex:1">
-        <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:7px">Nama Kategori</div>
-        <input type="text" id="cf-label" value="${esc(cat?.l||'')}" placeholder="cth: Rokok, Pulsa, Kopi" style="width:100%;padding:12px 14px;background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none">
-      </div>
+    <div style="margin-bottom:14px">
+      <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:7px">Nama Kategori</div>
+      <input type="text" id="cf-label" value="${esc(cat?.l||'')}" placeholder="cth: Rokok, Pulsa, Kopi" style="width:100%;padding:12px 14px;background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none">
     </div>
     <button id="cf-save" style="width:100%;padding:14px;border-radius:var(--radius-sm);font-size:15px;font-weight:600;background:var(--accent);color:var(--bg);border:none;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:8px">${isEdit?'Simpan Perubahan':'Tambah Kategori'}</button>
     <button id="cf-cancel" style="width:100%;padding:14px;border-radius:var(--radius-sm);font-size:14px;font-weight:600;background:var(--card2);color:var(--muted);border:1px solid var(--border);cursor:pointer;font-family:'DM Sans',sans-serif">Batal</button>
@@ -1711,12 +1692,11 @@ function showCatForm(type,cat){
   m.onclick=(e)=>{if(e.target===m)m.remove()};
   m.querySelector('#cf-save').onclick=()=>{
     const label=m.querySelector('#cf-label').value.trim();
-    const emoji=m.querySelector('#cf-emoji').value.trim()||'💸';
     if(!label){toast('Nama kategori wajib diisi','e');return}
     const cats=type==='out'?OUT_CATS:IN_CATS;
     if(isEdit){
       const idx=cats.findIndex(c=>c.v===cat.v);
-      if(idx!==-1){cats[idx]={...cats[idx],e:emoji,l:label}}
+      if(idx!==-1){cats[idx]={...cats[idx],l:label}}
     }else{
       // Buat slug dari label
       const slug=label.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'').substring(0,20)||`cat-${Date.now()}`;
