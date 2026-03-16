@@ -362,12 +362,14 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
     <div class="type-btn in" id="tb-in" onclick="setTrxType('in')"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M12 5v14m0 0 7-7m-7 7-7-7"/></svg>Pemasukan</div>
   </div>
   <div class="fg"><label class="fl">Jumlah (Rp)</label><div class="pfx"><span>Rp</span><input id="tf-amt" type="number" placeholder="50000" inputmode="numeric"></div></div>
-  <div class="fg"><label class="fl">Kategori</label>
-    <select id="tf-cat-sel" onchange="document.getElementById('tf-cat').value=this.value" style="width:100%"></select>
-    <input type="hidden" id="tf-cat">
-  </div>
   <div class="fg"><label class="fl">Dompet</label><select id="tf-wallet"></select></div>
-  <div class="fg"><label class="fl">Tanggal</label><input id="tf-date" type="date"></div>
+  <div class="fr">
+    <div class="fg"><label class="fl">Kategori</label>
+      <select id="tf-cat-sel" onchange="document.getElementById('tf-cat').value=this.value" style="width:100%"></select>
+      <input type="hidden" id="tf-cat">
+    </div>
+    <div class="fg"><label class="fl">Tanggal</label><input id="tf-date" type="date"></div>
+  </div>
   <div class="fg"><label class="fl">Catatan <span style="color:var(--muted);font-weight:400;text-transform:none">(opsional)</span></label><input id="tf-note" type="text" placeholder="cth: Makan siang, gaji bulan ini"></div>
   <div id="tf-del" style="display:none"><div class="dvd mt12"></div><button class="btn btn-d mt12" onclick="delTrx()">Hapus Transaksi</button></div>
   <button class="btn btn-p mt16" onclick="saveTrx()">Simpan</button>
@@ -754,7 +756,7 @@ function rTrx(){
   updWalletChips();
   const li=document.getElementById('t-list');
   const w=gw();
-  let data=S.wid?S.trx.filter(t=>t.wallet_id===S.wid):S.trx.slice();
+  let data=S.trx.slice(); // tampilkan semua wallet
   if(trxFilter==='in')data=data.filter(t=>t.type==='in');
   if(trxFilter==='out')data=data.filter(t=>t.type==='out');
   if(!data.length){li.innerHTML=`<div class="empty"><div class="empty-ico">📋</div><div class="empty-title">Belum ada transaksi</div><div class="empty-sub">Tap + untuk mencatat</div></div>`;return}
@@ -844,13 +846,13 @@ function getCatIcon(v,type){
   return icons[v]||`<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" fill="currentColor" opacity=".15"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.75"/></svg>`;
 }
 function renderCatGrid(gridId,cats,hiddenId){
-  // gridId sekarang adalah select element id (bf-cat-sel / tf-cat-sel)
   const selId=hiddenId==='bf-cat'?'bf-cat-sel':'tf-cat-sel';
-  const cur=document.getElementById(hiddenId).value;
+  const cur=document.getElementById(hiddenId)?.value||'';
   const sel=document.getElementById(selId);
   if(!sel)return;
-  sel.innerHTML='<option value="">Pilih kategori...</option>'+cats.map(c=>`<option value="${c.v}"${cur===c.v?' selected':''}>${c.l}</option>`).join('');
-  sel.onchange=()=>{document.getElementById(hiddenId).value=sel.value;};
+  sel.innerHTML='<option value="">Pilih kategori...</option>'+cats.map(cat=>`<option value="${cat.v}"${cur===cat.v?' selected':''}>${cat.l}</option>`).join('');
+  sel.value=cur||'';
+  sel.onchange=()=>{const h=document.getElementById(hiddenId);if(h)h.value=sel.value;};
 }
 function openTrxAdd(){
   if(!S.wid){toast('Tambah dompet dulu di Setelan','e');return}
@@ -958,7 +960,7 @@ async function saveTrx(){
     }
     csh('sh-tf');toast(id?'Transaksi diperbarui':'Transaksi dicatat','ok');rHome();rTrx();flashBalance();
     // Reload wallet balance dari DB untuk sinkronisasi
-    dbG(`dk_wallets?user_id=eq.${S.user.id}&deleted_at=is.null`).then(ws=>{if(ws&&ws.length){ws.forEach(dw=>{const sw=S.wallets.find(x=>x.id===dw.id);if(sw)sw.balance=toNum(dw.balance)});rHome();}}).catch(()=>{});
+    dbG(`dk_wallets?user_id=eq.${S.user.id}&deleted_at=is.null`).then(ws=>{if(ws&&ws.length){ws.forEach(dw=>{const sw=S.wallets.find(x=>x.id===dw.id);if(sw)sw.balance=toNum(dw.balance)});rHome();rTrx();}}).catch(()=>{});
   }catch(err){toast('Gagal: '+err.message,'e')}
 }
 async function delTrx(){
@@ -1110,7 +1112,7 @@ function rSaving(){
           <div class="sav-target">Target: ${rp(s.target)}</div>
           ${deadlineLabel?`<div style="font-size:11px;font-weight:700;color:${deadlineDays<0||deadlineDays===0?'var(--red)':'var(--gold)'};margin-top:2px">${deadlineLabel}</div>`:''}
         </div>
-        <div class="sav-emoji">${esc(s.emoji)}</div>
+        
       </div>
       <div class="sav-amt">${rp(s.saved)}</div>
       <div class="prog mt8"><div class="prog-f" style="width:${Math.min(pct*100,100).toFixed(0)}%;background:${done?'var(--green)':'var(--gold)'}"></div></div>
@@ -1121,7 +1123,7 @@ function rSaving(){
 function openSavingDetail(id){
   const s=S.savings.find(x=>x.id===id);if(!s)return;
   const pct=toNum(s.target)?Math.min(toNum(s.saved)/toNum(s.target),1):0;
-  document.getElementById('sh-svd-t').textContent=`${s.emoji} ${s.name}`;
+  document.getElementById('sh-svd-t').textContent=s.name;
   const deadlineStr=s.deadline?`<div style="font-size:12px;color:var(--muted);margin-top:4px">🗓️ Deadline: ${new Date(s.deadline).toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'})}</div>`:'';
   const noteStr=s.note?`<div style="margin-top:16px;background:var(--card2);border-radius:12px;padding:12px;font-size:13px;color:var(--text2);line-height:1.6;text-align:left">${esc(s.note)}</div>`:'';
   document.getElementById('sh-svd-body').innerHTML=`
@@ -1320,7 +1322,8 @@ async function saveRoutine(){
   const day=parseInt(document.getElementById('rf-day').value)||1;
   if(day<1||day>31){toast('Tanggal harus 1–31','e');return}
   const id=document.getElementById('rf-id').value;
-  const data={user_id:S.user.id,name,type:curRoutineType,amount:amt,day,wallet_id:document.getElementById('rf-wallet').value};
+  const rtype=(curRoutineType==='in'||curRoutineType==='out')?curRoutineType:'out';
+  const data={user_id:S.user.id,name,type:rtype,amount:amt,day,wallet_id:document.getElementById('rf-wallet').value};
   try{
     if(id){await dbU(`dk_routines?id=eq.${id}`,data);const i=S.routines.findIndex(r=>r.id===id);if(i!==-1)S.routines[i]={...S.routines[i],...data}}
     else{const newId=nuid();const res=await dbP('dk_routines',{...data,id:newId});const r=(Array.isArray(res)&&res.length)?res[0]:{...data,id:newId};S.routines.push({...r,amount:toNum(r.amount)})}
@@ -1655,7 +1658,6 @@ function rSetCats(){
     if(!el)return;
     el.innerHTML=!cats.length?`<div style="color:var(--muted);font-size:13px;padding:8px 0">Belum ada kategori</div>`:
       cats.map(c=>`<div class="li">
-        <div class="li-ico x">${getCatIcon(c.v,type)}</div>
         <div class="li-body"><div class="li-title">${esc(c.l)}</div></div>
         <div style="display:flex;gap:6px">
           <button onclick="openCatEdit('${type}','${esc(c.v)}')" style="font-size:11px;font-weight:600;padding:5px 10px;border-radius:8px;background:var(--card2);border:1px solid var(--border);cursor:pointer;color:var(--text2);font-family:'DM Sans',sans-serif">Edit</button>
@@ -1733,6 +1735,7 @@ async function init(){
   if(sess){
     try{
       S.user=JSON.parse(sess);
+      loadCats(); // load cats per user
       await loadAll();
       document.getElementById('auth-page').classList.remove('active');
       document.getElementById('app').style.display='flex';
