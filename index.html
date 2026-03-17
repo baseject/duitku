@@ -218,7 +218,7 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 <div id="auth-page">
   <div style="font-size:48px;margin-bottom:12px">💰</div>
   <div class="a-logo">Duitku</div>
-  <div class="a-sub">Wayahnya irit dengan catat duitmu.</div>
+  <div class="a-sub">Wayahnya irit dengan catat duit</div>
   <div class="a-form">
     <div class="fg"><label class="fl">Username</label><input id="au" type="text" autocomplete="off" placeholder="username" autocapitalize="none"></div>
     <div class="a-err" id="ae"></div>
@@ -347,7 +347,7 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 <!-- Wallet Form -->
 <div class="ovl" id="sh-wf"><div class="sheet" onclick="event.stopPropagation()"><div class="sh-handle"></div><div class="sh-hd"><div class="sh-title" id="sh-wf-t">Tambah Dompet</div><button class="sh-close" onclick="csh('sh-wf')"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div><div class="sh-body">
   <input type="hidden" id="wf-id">
-  <div class="fg"><label class="fl">Nama</label><input id="wf-name" type="text" placeholder="cth: Kas, Dana, OVO, BCA"></div>
+  <div class="fg"><label class="fl">Nama</label><input id="wf-name" type="text" placeholder="Cash, Dana, BCA"></div>
   <input type="hidden" id="wf-emoji" value="💳">
   <div class="fg"><label class="fl" id="wf-bal-lbl">Saldo Awal (Rp)</label><div class="pfx"><span>Rp</span><input id="wf-bal" type="number" placeholder="0" inputmode="numeric"></div></div>
   <div id="wf-del" style="display:none"><div class="dvd mt12"></div><button class="btn btn-d mt12" onclick="delWallet()">Hapus Dompet</button></div>
@@ -370,7 +370,7 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
     </div>
     <div class="fg"><label class="fl">Tanggal</label><input id="tf-date" type="date"></div>
   </div>
-  <div class="fg"><label class="fl">Catatan <span style="color:var(--muted);font-weight:400;text-transform:none">(opsional)</span></label><input id="tf-note" type="text" placeholder="cth: Makan siang, gaji bulan ini"></div>
+  <div class="fg"><label class="fl">Catatan <span style="color:var(--muted);font-weight:400;text-transform:none">(opsional)</span></label><input id="tf-note" type="text" placeholder="Makan siang, gaji bulan ini"></div>
   <div id="tf-del" style="display:none"><div class="dvd mt12"></div><button class="btn btn-d mt12" onclick="delTrx()">Hapus Transaksi</button></div>
   <button class="btn btn-p mt16" onclick="saveTrx()">Simpan</button>
 </div></div></div>
@@ -390,28 +390,12 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 <!-- Saving Form -->
 <div class="ovl" id="sh-svf"><div class="sheet" onclick="event.stopPropagation()"><div class="sh-handle"></div><div class="sh-hd"><div class="sh-title" id="sh-svf-t">Tambah Tabungan</div><button class="sh-close" onclick="csh('sh-svf')"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div><div class="sh-body">
   <input type="hidden" id="svf-id">
-  <div class="fg"><label class="fl">Nama Target</label><input id="svf-name" type="text" placeholder="cth: Beli HP, Liburan, Motor"></div>
-  <div class="fg"><label class="fl">Emoji</label>
-    <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px">
-      <div class="cat-item" data-emoji="🎯" onclick="pickSavEmoji('🎯')">🎯</div>
-      <div class="cat-item" data-emoji="✈️" onclick="pickSavEmoji('✈️')">✈️</div>
-      <div class="cat-item" data-emoji="📱" onclick="pickSavEmoji('📱')">📱</div>
-      <div class="cat-item" data-emoji="🏠" onclick="pickSavEmoji('🏠')">🏠</div>
-      <div class="cat-item" data-emoji="🏍️" onclick="pickSavEmoji('🏍️')">🏍️</div>
-      <div class="cat-item" data-emoji="💍" onclick="pickSavEmoji('💍')">💍</div>
-      <div class="cat-item" data-emoji="💻" onclick="pickSavEmoji('💻')">💻</div>
-      <div class="cat-item" data-emoji="🎮" onclick="pickSavEmoji('🎮')">🎮</div>
-      <div class="cat-item" data-emoji="👟" onclick="pickSavEmoji('👟')">👟</div>
-      <div class="cat-item" data-emoji="🌟" onclick="pickSavEmoji('🌟')">🌟</div>
-      <div class="cat-item" data-emoji="🏆" onclick="pickSavEmoji('🏆')">🏆</div>
-      <div class="cat-item" data-emoji="💰" onclick="pickSavEmoji('💰')">💰</div>
-    </div>
-    <input type="hidden" id="svf-emoji" value="🎯">
-  </div>
+  <div class="fg"><label class="fl">Nama Target</label><input id="svf-name" type="text" placeholder="Liburan, Motor"></div>
+v>
   <div class="fg"><label class="fl">Target (Rp)</label><div class="pfx"><span>Rp</span><input id="svf-target" type="number" placeholder="1000000" inputmode="numeric"></div></div>
   <div class="fg"><label class="fl">Sudah Terkumpul (Rp)</label><div class="pfx"><span>Rp</span><input id="svf-saved" type="number" placeholder="0" inputmode="numeric"></div></div>
   <div class="fg"><label class="fl">Deadline <span style="color:var(--muted);font-weight:400;text-transform:none">(opsional)</span></label><input id="svf-deadline" type="date"></div>
-  <div class="fg"><label class="fl">Catatan <span style="color:var(--muted);font-weight:400;text-transform:none">(opsional)</span></label><textarea id="svf-note" placeholder="Untuk apa tabungan ini..."></textarea></div>
+  <div class="fg"><label class="fl">Catatan <span style="color:var(--muted);font-weight:400;text-transform:none">(opsional)</span></label><textarea id="svf-note" placeholder="Untuk apa tabungan ini"></textarea></div>
   <div id="svf-del" style="display:none"><div class="dvd mt12"></div><button class="btn btn-d mt12" onclick="delSaving()">Hapus Tabungan</button></div>
   <button class="btn btn-p mt16" onclick="saveSaving()">Simpan</button>
 </div></div></div>
@@ -426,7 +410,7 @@ input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
     <div class="type-btn out on" id="rb-out" onclick="setRoutineType('out')"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M12 19V5m0 0-7 7m7-7 7 7"/></svg>Pengeluaran</div>
     <div class="type-btn in" id="rb-in" onclick="setRoutineType('in')"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:5px"><path d="M12 5v14m0 0 7-7m-7 7-7-7"/></svg>Pemasukan</div>
   </div>
-  <div class="fg"><label class="fl">Nama</label><input id="rf-name" type="text" placeholder="cth: Netflix, Gaji, Kos"></div>
+  <div class="fg"><label class="fl">Nama</label><input id="rf-name" type="text" placeholder="Wifi, Gaji, Listrik"></div>
   <div class="fg"><label class="fl">Jumlah (Rp)</label><div class="pfx"><span>Rp</span><input id="rf-amt" type="number" placeholder="50000" inputmode="numeric"></div></div>
   <div class="fg"><label class="fl">Tanggal tiap bulan</label><input id="rf-day" type="number" min="1" max="31" placeholder="1" inputmode="numeric"><div class="fhint">Tanggal berapa setiap bulan (1-31)</div></div>
   <div class="fg"><label class="fl">Dompet</label><select id="rf-wallet"></select></div>
@@ -850,7 +834,7 @@ function renderCatGrid(gridId,cats,hiddenId){
   const cur=document.getElementById(hiddenId)?.value||'';
   const sel=document.getElementById(selId);
   if(!sel)return;
-  sel.innerHTML='<option value="">Pilih kategori...</option>'+cats.map(cat=>`<option value="${cat.v}"${cur===cat.v?' selected':''}>${cat.l}</option>`).join('');
+  sel.innerHTML='<option value="">Pilih kategori</option>'+cats.map(cat=>`<option value="${cat.v}"${cur===cat.v?' selected':''}>${cat.l}</option>`).join('');
   sel.value=cur||'';
   sel.onchange=()=>{const h=document.getElementById(hiddenId);if(h)h.value=sel.value;};
 }
@@ -1075,7 +1059,7 @@ async function saveBudget(){
   const id=document.getElementById('bf-id').value;
   // Cegah duplikat kategori saat tambah baru
   if(!id&&S.budgets.find(b=>b.category===cat)){toast('Budget kategori ini sudah ada','e');return}
-  const data={user_id:S.user.id,category:cat,limit};
+  const data={user_id:S.user.id,category:cat,"limit":limit};
   try{
     if(id){await dbU(`dk_budgets?id=eq.${id}`,data);const i=S.budgets.findIndex(b=>b.id===id);if(i!==-1)S.budgets[i]={...S.budgets[i],...data}}
     else{const newId=nuid();const res=await dbP('dk_budgets',{...data,id:newId});const b=(Array.isArray(res)&&res.length)?res[0]:{...data,id:newId};S.budgets.push({...b,limit:toNum(b.limit)})}
@@ -1463,7 +1447,7 @@ function exportRingkasan(){
   });
   const bulan=now.toLocaleDateString('id-ID',{month:'long',year:'numeric'});
   const walletLines=S.wallets.map(w=>`  ${w.name}: ${rp(w.balance)}`).join('\n');
-  const catLines=Object.entries(bycat).sort((a,b)=>b[1]-a[1]).map(([k,v])=>{const ci=catInfo(k,'out');return`  ${ci.e} ${ci.l}: ${rp(v)}`;}).join('\n');
+  const catLines=Object.entries(bycat).sort((a,b)=>b[1]-a[1]).map(([k,v])=>{const ci=catInfo(k,'out');return`  ${ci.l}: ${rp(v)}`;}).join('\n');
   const text=`📊 Ringkasan Duitku — ${bulan}\n\n`+
     `💰 Pemasukan: ${rp(moIn)}\n`+
     `💸 Pengeluaran: ${rp(moOut)}\n`+
@@ -1587,7 +1571,7 @@ function buildRingkasanHTML(now,bulan,username){
   const selisih=moIn-moOut;
   const bycat={};
   moTrx.filter(t=>t.type==='out'&&t.category!=='transfer').forEach(t=>{if(!bycat[t.category])bycat[t.category]=0;bycat[t.category]+=toNum(t.amount);});
-  const catRows=Object.entries(bycat).sort((a,b)=>b[1]-a[1]).map(([k,v])=>{const ci=catInfo(k,'out');return`<tr><td style="padding:10px 16px;font-size:13px">${esc(ci.e)} ${esc(ci.l)}</td><td style="padding:10px 16px;font-size:13px;text-align:right;color:#dc2626;font-weight:600">${rp(v)}</td></tr>`;}).join('');
+  const catRows=Object.entries(bycat).sort((a,b)=>b[1]-a[1]).map(([k,v])=>{const ci=catInfo(k,'out');return`<tr><td style="padding:10px 16px;font-size:13px">${esc(ci.l)}</td><td style="padding:10px 16px;font-size:13px;text-align:right;color:#dc2626;font-weight:600">${rp(v)}</td></tr>`;}).join('');
   const walletRows=S.wallets.map(w=>`<tr><td style="padding:10px 16px;font-size:13px">${esc(w.name)}</td><td style="padding:10px 16px;font-size:13px;text-align:right;font-weight:600">${rp(w.balance)}</td></tr>`).join('');
   return`<div style="font-family:system-ui,sans-serif;background:#fff;padding:32px">
     <div style="border-bottom:2px solid #18181b;padding-bottom:16px;margin-bottom:24px">
@@ -1613,7 +1597,7 @@ function buildTrxHTML(bulan,username){
     const prefix=t.type==='in'?'+':'-';
     return`<tr style="border-bottom:1px solid #f4f4f5">
       <td style="padding:10px 12px;font-size:12px;color:#52525b">${fmtDS(t.date)}</td>
-      <td style="padding:10px 12px;font-size:12px">${esc(ci.e)} ${esc(ci.l)}</td>
+      <td style="padding:10px 12px;font-size:12px">${esc(ci.l)}</td>
       <td style="padding:10px 12px;font-size:12px;color:#52525b;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(t.note||'—')}</td>
       <td style="padding:10px 12px;font-size:12px;color:#52525b">${esc(w?.name||'—')}</td>
       <td style="padding:10px 12px;font-size:12px;font-weight:600;text-align:right;color:${color}">${prefix}${rp(t.amount)}</td>
@@ -1684,7 +1668,7 @@ function showCatForm(type,cat){
     <div style="font-size:17px;font-weight:700;margin-bottom:16px;letter-spacing:-.4px">${isEdit?'Edit':'Tambah'} Kategori ${type==='out'?'Pengeluaran':'Pemasukan'}</div>
     <div style="margin-bottom:14px">
       <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:7px">Nama Kategori</div>
-      <input type="text" id="cf-label" value="${esc(cat?.l||'')}" placeholder="cth: Rokok, Pulsa, Kopi" style="width:100%;padding:12px 14px;background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none">
+      <input type="text" id="cf-label" value="${esc(cat?.l||'')}" placeholder="Rokok, Pulsa, Kopi" style="width:100%;padding:12px 14px;background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none">
     </div>
     <button id="cf-save" style="width:100%;padding:14px;border-radius:var(--radius-sm);font-size:15px;font-weight:600;background:var(--accent);color:var(--bg);border:none;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:8px">${isEdit?'Simpan Perubahan':'Tambah Kategori'}</button>
     <button id="cf-cancel" style="width:100%;padding:14px;border-radius:var(--radius-sm);font-size:14px;font-weight:600;background:var(--card2);color:var(--muted);border:1px solid var(--border);cursor:pointer;font-family:'DM Sans',sans-serif">Batal</button>
@@ -1757,13 +1741,13 @@ init();
   <div class="fg"><label class="fl">Ke Dompet</label><select id="tr-to"></select></div>
   <div class="fg"><label class="fl">Jumlah (Rp)</label><div class="pfx"><span>Rp</span><input id="tr-amt" type="number" placeholder="100000" inputmode="numeric"></div></div>
   <div class="fg"><label class="fl">Tanggal</label><input id="tr-date" type="date"></div>
-  <div class="fg"><label class="fl">Catatan <span style="color:var(--muted);font-weight:400;text-transform:none">(opsional)</span></label><input id="tr-note" type="text" placeholder="cth: Top up Dana"></div>
+  <div class="fg"><label class="fl">Catatan <span style="color:var(--muted);font-weight:400;text-transform:none">(opsional)</span></label><input id="tr-note" type="text" placeholder="Top up Dana"></div>
   <button class="btn btn-p mt16" onclick="saveTransfer()">Transfer</button>
 </div></div></div>
 
 <!-- Search Sheet -->
 <div class="ovl" id="sh-srch"><div class="sheet" style="max-height:92vh" onclick="event.stopPropagation()"><div class="sh-handle"></div><div class="sh-hd"><div class="sh-title" style="display:flex;align-items:center;gap:8px"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg> Cari Transaksi</div><button class="sh-close" onclick="csh('sh-srch')"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div><div class="sh-body">
-  <div class="fg"><input id="srch-q" type="text" placeholder="Nama, kategori, catatan..." oninput="doSearch()"></div>
+  <div class="fg"><input id="srch-q" type="text" placeholder="Nama, kategori, catatan" oninput="doSearch()"></div>
   <div id="srch-res"></div>
 </div></div></div>
 </body>
