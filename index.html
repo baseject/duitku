@@ -538,14 +538,19 @@ function saveCats(){
 }
 loadCats();
 
-// catInfo: returns {l} for display — no emoji needed
+// catInfo: returns {l} for display
 const catInfo=(v,type)=>{
-  if(v==='transfer')return{l:'Transfer'};
-  const arr=type==='in'?IN_CATS:OUT_CATS;
-  const found=arr.find(c=>c.v===v);
-  if(found)return found;
-  // fallback: capitalize raw value
-  return{l:v?v.charAt(0).toUpperCase()+v.slice(1).replace(/-/g,' '):'Lainnya'};
+  if(!v||v==='transfer')return{l:v==='transfer'?'Transfer':'—'};
+  // Search primary array first
+  const primary=type==='in'?IN_CATS:OUT_CATS;
+  const found=primary.find(c=>c.v===v);
+  if(found&&found.l)return found;
+  // Fallback: search the other array (type mismatch in old data)
+  const secondary=type==='in'?OUT_CATS:IN_CATS;
+  const found2=secondary.find(c=>c.v===v);
+  if(found2&&found2.l)return found2;
+  // Last resort: capitalize raw value
+  return{l:v.charAt(0).toUpperCase()+v.slice(1).replace(/_/g,' ').replace(/-/g,' ')};
 };
 
 // ── TOAST / CONFIRM ───────────────────────────────────
@@ -1622,7 +1627,7 @@ function buildTrxHTML(bulan,username){
     const w=S.wallets.find(x=>x.id===t.wallet_id);
     const color=t.type==='in'?'#059669':'#dc2626';
     const prefix=t.type==='in'?'+':'-';
-    const catLabel=ci.l||t.category||'—';
+    const catLabel=(ci.l&&ci.l.trim())?ci.l:(t.category?t.category.charAt(0).toUpperCase()+t.category.slice(1).replace(/_/g,' ').replace(/-/g,' '):'—');
     return`<tr style="border-bottom:1px solid #f4f4f5">
       <td style="padding:10px 12px;font-size:12px;color:#52525b">${fmtDS(t.date)}</td>
       <td style="padding:10px 12px;font-size:12px">${esc(catLabel)}</td>
