@@ -317,7 +317,7 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
         <div class="sec-title" style="padding:0 0 8px">Akun</div>
         <div style="font-size:13px;color:var(--muted);margin-bottom:12px">Login sebagai <span id="set-user" style="color:var(--text);font-weight:700"></span></div>
         <button class="btn btn-s" onclick="exportRingkasan()">Salin Ringkasan Bulan Ini</button>
-        <button class="btn btn-s mt8" onclick="openExportPDF()" style="color:var(--red)">Ekspor PDF</button>
+        <button class="btn btn-s mt8" onclick="openExportPDF()">Ekspor PDF</button>
       </div>
     </div>
   </div>
@@ -1640,8 +1640,9 @@ function buildRingkasanHTML(now,bulan,username){
   const bycat={};
   moTrx.filter(t=>t.type==='out'&&t.category!=='transfer').forEach(t=>{const k=t.category||'_unknown';if(!bycat[k])bycat[k]=0;bycat[k]+=toNum(t.amount)});
   const catRows=Object.entries(bycat).sort((a,b)=>b[1]-a[1]).map(([k,v])=>{
+    const CAT_MAP={makan:'Makan',transport:'Transport',belanja:'Belanja',hiburan:'Hiburan',kesehatan:'Kesehatan',tagihan:'Tagihan',pendidikan:'Pendidikan',fashion:'Fashion',lainnya:'Lainnya',gaji:'Gaji',freelance:'Freelance',bisnis:'Bisnis',investasi:'Investasi',hadiah:'Hadiah'};
     const ci=catInfo(k,'out');
-    const lbl=(ci.l&&ci.l.trim()&&ci.l!=='—')?ci.l:(k&&k!=='_unknown'?k.charAt(0).toUpperCase()+k.slice(1).replace(/_/g,' ').replace(/-/g,' '):'Pengeluaran');
+    const lbl=(ci.l&&ci.l.trim()&&ci.l!=='—')?ci.l:CAT_MAP[k]||(k&&k!=='_unknown'?k.charAt(0).toUpperCase()+k.slice(1).replace(/_/g,' ').replace(/-/g,' '):'Pengeluaran');
     return`<tr><td style="padding:10px 16px;font-size:13px">${esc(lbl)}</td><td style="padding:10px 16px;font-size:13px;text-align:right;color:#dc2626;font-weight:600">${rp(v)}</td></tr>`;
   }).join('');
   const walletRows=S.wallets.map(w=>`<tr><td style="padding:10px 16px;font-size:13px">${esc(w.name)}</td><td style="padding:10px 16px;font-size:13px;text-align:right;font-weight:600">${rp(w.balance)}</td></tr>`).join('');
@@ -1661,15 +1662,17 @@ function buildRingkasanHTML(now,bulan,username){
   </div>`;
 }
 function buildTrxHTML(bulan,username){
-  loadCats(); // pastikan cats ter-load dengan uid yang benar
+  loadCats();
+  // Map kategori default — fallback kalau OUT_CATS/IN_CATS kosong
+  const CAT_MAP={makan:'Makan',transport:'Transport',belanja:'Belanja',hiburan:'Hiburan',kesehatan:'Kesehatan',tagihan:'Tagihan',pendidikan:'Pendidikan',fashion:'Fashion',lainnya:'Lainnya',gaji:'Gaji',freelance:'Freelance',bisnis:'Bisnis',investasi:'Investasi',hadiah:'Hadiah',transfer:'Transfer'};
   const rows=S.trx.filter(t=>t.category!=='transfer').map(t=>{
     const ci=catInfo(t.category,t.type);
     const w=S.wallets.find(x=>x.id===t.wallet_id);
     const color=t.type==='in'?'#059669':'#dc2626';
     const prefix=t.type==='in'?'+':'-';
-    // catLabel: kategori → raw value → note → tipe transaksi (bukan '—')
     let catLabel;
     if(ci.l&&ci.l.trim()&&ci.l!=='—')catLabel=ci.l;
+    else if(t.category&&CAT_MAP[t.category])catLabel=CAT_MAP[t.category];
     else if(t.category&&t.category.trim())catLabel=t.category.charAt(0).toUpperCase()+t.category.slice(1).replace(/_/g,' ').replace(/-/g,' ');
     else if(t.note&&t.note.trim())catLabel=t.note.trim().length>20?t.note.trim().slice(0,20)+'…':t.note.trim();
     else catLabel=t.type==='in'?'Pemasukan':'Pengeluaran';
