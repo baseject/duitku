@@ -292,7 +292,7 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
   <div class="page" id="pg-settings">
     <div class="hd">
       <div class="hd-title">Setelan</div>
-      <button style="color:var(--black);font-size:13px;font-weight:700;padding:6px 10px;border-radius:8px;background:var(--rl)" onclick="logout()">Keluar</button>
+      <button style="color:var(--red);font-size:13px;font-weight:700;padding:6px 10px;border-radius:8px;background:var(--rl)" onclick="logout()">Keluar</button>
     </div>
     <div style="padding:16px;display:flex;flex-direction:column;gap:16px">
       <div>
@@ -492,14 +492,14 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 <script>
 // ── API ───────────────────────────────────────────────
 const API='https://api-ruby-two-84.vercel.app';
-async function db(method,path,body){
-  const headers={'Content-Type':'application/json'};
+async function db(method,path,body,extraHeaders){
+  const headers={'Content-Type':'application/json',...(extraHeaders||{})};
   if(method==='POST')headers['Prefer']='return=representation';
   const r=await fetch(`${API}/api/db/${path}`,{method,headers,body:body?JSON.stringify(body):undefined});
   if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.error||e.message||r.statusText)}
   const t=await r.text();return t?JSON.parse(t):[];
 }
-const dbG=p=>db('GET',p);
+const dbG=(p,limit)=>db('GET',p,null,limit?{'Range':`0-${limit-1}`,'Range-Unit':'items'}:{});
 const dbP=(p,b)=>db('POST',p,b);
 const dbU=(p,b)=>db('PATCH',p,b);
 
@@ -729,7 +729,7 @@ async function loadAll(){
 }
 async function loadTrx(){
   if(!S.user)return;
-  const raw=await dbG(`dk_trx?user_id=eq.${S.user.id}&deleted_at=is.null&order=date.desc&limit=200`);
+  const raw=await dbG(`dk_trx?user_id=eq.${S.user.id}&deleted_at=is.null&order=date.desc`,200);
   S.trx=raw.map(t=>({...t,amount:toNum(t.amount)}));
 }
 
@@ -1775,7 +1775,7 @@ function downloadPDF(htmlContent,type,bulan){
 // ── INIT ──────────────────────────────────────────────
 async function init(){
   initTheme();
-  fetch(`${API}/api/db/dk_users?select=id&limit=1`).catch(()=>{});
+  fetch(`${API}/api/db/dk_users?select=id`,{headers:{'Range':'0-0','Range-Unit':'items'}}).catch(()=>{});
   const sess=localStorage.getItem('dk_sess');
   if(sess){
     try{
