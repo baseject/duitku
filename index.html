@@ -292,7 +292,7 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
   <div class="page" id="pg-settings">
     <div class="hd">
       <div class="hd-title">Setelan</div>
-      <button style="color:var(--red);font-size:13px;font-weight:700;padding:6px 10px;border-radius:8px;background:var(--rl)" onclick="logout()">Keluar</button>
+      <button style="color:var(--black);font-size:13px;font-weight:700;padding:6px 10px;border-radius:8px;background:var(--rl)" onclick="logout()">Keluar</button>
     </div>
     <div style="padding:16px;display:flex;flex-direction:column;gap:16px">
       <div>
@@ -493,8 +493,10 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 // ── API ───────────────────────────────────────────────
 const API='https://api-ruby-two-84.vercel.app';
 async function db(method,path,body){
-  const r=await fetch(`${API}/api/db/${path}`,{method,headers:{'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined});
-  if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.error||r.statusText)}
+  const headers={'Content-Type':'application/json'};
+  if(method==='POST')headers['Prefer']='return=representation';
+  const r=await fetch(`${API}/api/db/${path}`,{method,headers,body:body?JSON.stringify(body):undefined});
+  if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.error||e.message||r.statusText)}
   const t=await r.text();return t?JSON.parse(t):[];
 }
 const dbG=p=>db('GET',p);
@@ -765,8 +767,9 @@ function rHome(){
   const now=new Date();
   const moTrx=S.trx.filter(t=>{const d=new Date(t.date);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear()&&t.wallet_id===S.wid});
   const moTrxAll=S.trx.filter(t=>{const d=new Date(t.date);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear()});
-  const moIn=moTrx.filter(t=>t.type==='in'&&t.category!=='transfer').reduce((a,t)=>a+toNum(t.amount),0);
-  const moOut=moTrx.filter(t=>t.type==='out'&&t.category!=='transfer').reduce((a,t)=>a+toNum(t.amount),0);
+  // Pemasukan & pengeluaran: pakai SEMUA dompet bukan hanya yang aktif
+  const moIn=moTrxAll.filter(t=>t.type==='in'&&t.category!=='transfer').reduce((a,t)=>a+toNum(t.amount),0);
+  const moOut=moTrxAll.filter(t=>t.type==='out'&&t.category!=='transfer').reduce((a,t)=>a+toNum(t.amount),0);
 
   document.getElementById('h-balance').innerHTML=`
     <div style="background:var(--card);border-radius:var(--radius);padding:20px;border:1px solid var(--border);box-shadow:var(--sh)">
@@ -1118,16 +1121,16 @@ async function saveBudget(){
   if(!limitVal||limitVal<=0){toast('Limit wajib diisi','e');return}
   const id=document.getElementById('bf-id').value;
   if(!id&&S.budgets.find(b=>b.category===cat)){toast('Budget kategori ini sudah ada','e');return}
-  const data={user_id:S.user.id,category:cat,budget_limit:limitVal};
+  const data={user_id:S.user.id,category:cat,amount:limitVal};
   try{
     if(id){
       await dbU(`dk_budgets?id=eq.${id}`,data);
-      const i=S.budgets.findIndex(b=>b.id===id);if(i!==-1)S.budgets[i]={...S.budgets[i],...data,limit:limitVal,budget_limit:limitVal};
+      const i=S.budgets.findIndex(b=>b.id===id);if(i!==-1)S.budgets[i]={...S.budgets[i],...data,limit:limitVal};
     }else{
       const newId=nuid();
       const res=await dbP('dk_budgets',{...data,id:newId});
       const b=(Array.isArray(res)&&res.length)?res[0]:{...data,id:newId};
-      S.budgets.push({...b,limit:toNum(b.budget_limit||b.amount||b.limit)});
+      S.budgets.push({...b,limit:toNum(b.amount||b.budget_limit||b.limit)});
     }
     csh('sh-bf');toast(id?'Budget diperbarui':'Budget ditambahkan','ok');rBudget();rHome();
   }catch(err){toast('Gagal: '+err.message,'e')}
