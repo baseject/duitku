@@ -1121,7 +1121,7 @@ async function saveBudget(){
   if(!limitVal||limitVal<=0){toast('Limit wajib diisi','e');return}
   const id=document.getElementById('bf-id').value;
   if(!id&&S.budgets.find(b=>b.category===cat)){toast('Budget kategori ini sudah ada','e');return}
-  const data={user_id:S.user.id,category:cat,amount:limitVal};
+  const data={user_id:S.user.id,category:cat,budget_limit:limitVal,amount:limitVal};
   try{
     if(id){
       await dbU(`dk_budgets?id=eq.${id}`,data);
