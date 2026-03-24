@@ -495,12 +495,14 @@ const API='https://api-ruby-two-84.vercel.app';
 async function db(method,path,body){
   const headers={'Content-Type':'application/json'};
   const r=await fetch(`${API}/api/db/${path}`,{method,headers,body:body?JSON.stringify(body):undefined});
+  const t=await r.text();
+  console.log(`[API] ${method} ${path}`,r.status,t.slice(0,300));
   if(!r.ok){
     let msg=r.statusText;
-    try{const e=await r.json();msg=e.error||e.message||e.detail||JSON.stringify(e)||msg}catch{}
+    try{const e=JSON.parse(t);msg=e.error||e.message||e.detail||e.hint||JSON.stringify(e)||msg}catch{}
     throw new Error(msg);
   }
-  const t=await r.text();return t?JSON.parse(t):[];
+  return t?JSON.parse(t):[];
 }
 const dbG=p=>db('GET',p);
 const dbP=(p,b)=>db('POST',p,b);
@@ -1131,12 +1133,25 @@ async function saveBudget(){
       const i=S.budgets.findIndex(b=>b.id===id);if(i!==-1)S.budgets[i]={...S.budgets[i],...data,limit:limitVal};
     }else{
       const newId=nuid();
-      const res=await dbP('dk_budgets',{...data,id:newId});
+      // POST langsung dengan fetch untuk lihat raw error
+      const r=await fetch(`${API}/api/db/dk_budgets`,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({...data,id:newId})
+      });
+      const rawText=await r.text();
+      console.log('[BUDGET POST] status:',r.status,'body:',rawText);
+      if(!r.ok){
+        let msg=rawText;
+        try{const e=JSON.parse(rawText);msg=e.error||e.message||e.detail||e.hint||JSON.stringify(e);}catch{}
+        toast('Gagal: '+msg,'e');return;
+      }
+      const res=rawText?JSON.parse(rawText):[];
       const b=(Array.isArray(res)&&res.length)?res[0]:{...data,id:newId};
       S.budgets.push({...b,limit:toNum(b.amount||b.budget_limit||b.limit)});
     }
     csh('sh-bf');toast(id?'Budget diperbarui':'Budget ditambahkan','ok');rBudget();rHome();
-  }catch(err){toast('Gagal: '+err.message,'e')}
+  }catch(err){console.error('[BUDGET ERR]',err);toast('Gagal: '+err.message,'e')}
 }
 async function delBudget(){
   const id=document.getElementById('bf-id').value;
