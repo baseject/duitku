@@ -509,6 +509,25 @@ const dbU=(p,b)=>db('PATCH',p,b);
 
 // ── STATE ─────────────────────────────────────────────
 let S={user:null,wallets:[],wid:null,trx:[],budgets:[],savings:[],routines:[]};
+let BUDGET_LIMIT_COL='budget_limit'; // Will be auto-detected from DB schema
+async function detectBudgetCol(uid){
+  // Probe schema by inserting a test-read — use information_schema via a dummy budget fetch
+  // Faster: just try a targeted select and see which succeeds
+  try{
+    await dbG(`dk_budgets?user_id=eq.${uid}&select=budget_limit&limit=1`);
+    BUDGET_LIMIT_COL='budget_limit';return;
+  }catch(e1){
+    try{
+      await dbG(`dk_budgets?user_id=eq.${uid}&select=amount&limit=1`);
+      BUDGET_LIMIT_COL='amount';return;
+    }catch(e2){
+      try{
+        await dbG(`dk_budgets?user_id=eq.${uid}&select=limit&limit=1`);
+        BUDGET_LIMIT_COL='limit';return;
+      }catch(e3){BUDGET_LIMIT_COL='budget_limit';}
+    }
+  }
+}
 const gw=()=>S.wallets.find(w=>w.id===S.wid);
 
 // ── UTILS ─────────────────────────────────────────────
@@ -721,13 +740,20 @@ function logout(){
 // ── DATA LOAD ─────────────────────────────────────────
 async function loadAll(){
   const uid=S.user.id;
+  // Detect actual column name in dk_budgets before fetching
+  await detectBudgetCol(uid).catch(()=>{});
   const[wallets,budgets,savings,routines]=await Promise.all([
     dbG(`dk_wallets?user_id=eq.${uid}&deleted_at=is.null`),
-    dbG(`dk_budgets?user_id=eq.${uid}&deleted_at=is.null&select=id,user_id,category,budget_limit,deleted_at`),
+    dbG(`dk_budgets?user_id=eq.${uid}&deleted_at=is.null`),
     dbG(`dk_savings?user_id=eq.${uid}&deleted_at=is.null`),
     dbG(`dk_routines?user_id=eq.${uid}&deleted_at=is.null`)
   ]);
-  S.budgets=budgets.map(b=>({...b,limit:toNum(b.budget_limit)}));
+  // Auto-detect which column name the DB uses for budget limit
+  if(budgets.length>0){
+    const sample=budgets[0];
+    BUDGET_LIMIT_COL='budget_limit' in sample?'budget_limit':('amount' in sample?'amount':'limit');
+  }
+  S.budgets=budgets.map(b=>({...b,limit:toNum(b.budget_limit??b.limit??b.amount??0)}));
   S.savings=savings.map(s=>({...s,target:toNum(s.target),saved:toNum(s.saved)}));
   S.routines=routines.map(r=>({...r,amount:toNum(r.amount)}));
   if(!wallets.length){
@@ -1154,7 +1180,7 @@ async function saveBudget(){
   const limitVal=parseFloat(document.getElementById('bf-limit').value);
   if(!limitVal||limitVal<=0){toast('Limit wajib diisi','e');return}
   const id=document.getElementById('bf-id').value;
-  const data={user_id:S.user.id,category:cat,budget_limit:limitVal};
+  const data={user_id:S.user.id,category:cat,[BUDGET_LIMIT_COL]:limitVal};
   try{
     if(id){
       await dbU(`dk_budgets?id=eq.${id}`,data);
