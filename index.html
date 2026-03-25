@@ -723,7 +723,7 @@ async function loadAll(){
     dbG(`dk_savings?user_id=eq.${uid}&deleted_at=is.null`),
     dbG(`dk_routines?user_id=eq.${uid}&deleted_at=is.null`)
   ]);
-  S.budgets=budgets.map(b=>({...b,limit:toNum(b.amount)}));
+  S.budgets=budgets.map(b=>({...b,limit:toNum(b.limit)}));
   S.savings=savings.map(s=>({...s,target:toNum(s.target),saved:toNum(s.saved)}));
   S.routines=routines.map(r=>({...r,amount:toNum(r.amount)}));
   if(!wallets.length){
@@ -1151,7 +1151,7 @@ async function saveBudget(){
   if(!limitVal||limitVal<=0){toast('Limit wajib diisi','e');return}
   const id=document.getElementById('bf-id').value;
   if(!id&&S.budgets.find(b=>b.category===cat)){toast('Budget kategori ini sudah ada','e');return}
-  const data={user_id:S.user.id,category:cat,amount:limitVal};
+  const data={user_id:S.user.id,category:cat,limit:limitVal};
   try{
     if(id){
       await dbU(`dk_budgets?id=eq.${id}`,data);
@@ -1160,7 +1160,7 @@ async function saveBudget(){
       const newId=nuid();
       const res=await dbP('dk_budgets',{...data,id:newId});
       const b=(Array.isArray(res)&&res.length)?res[0]:{...data,id:newId};
-      S.budgets.push({...b,limit:toNum(b.amount)});
+      S.budgets.push({...b,limit:toNum(b.limit)});
     }
     csh('sh-bf');toast(id?'Budget diperbarui':'Budget ditambahkan','ok');rBudget();rHome();
   }catch(err){toast('Gagal: '+err.message,'e')}
