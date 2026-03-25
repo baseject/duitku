@@ -417,7 +417,7 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
       <input type="hidden" id="bf-cat">
       <div class="cat-chips" id="bf-cat-chips"></div>
     </div>
-    <div class="fg"><label class="fl">Limit per Bulan (Rp)</label><div class="pfx"><span>Rp</span><input id="bf-limit" type="number" placeholder="500000" inputmode="numeric"></div></div>
+    <div class="fg"><label class="fl" id="bf-limit-lbl">Limit per Bulan (Rp)</label><div class="pfx"><span>Rp</span><input id="bf-limit" type="number" placeholder="500000" inputmode="numeric"></div></div>
     <div id="bf-del" style="display:none"><div class="dvd mt12"></div><button class="btn btn-d mt12" onclick="delBudget()">Hapus Budget</button></div>
     <button class="btn btn-p mt16" onclick="saveBudget()">Simpan</button>
   </div>
@@ -496,7 +496,6 @@ async function db(method,path,body){
   const headers={'Content-Type':'application/json'};
   const r=await fetch(`${API}/api/db/${path}`,{method,headers,body:body?JSON.stringify(body):undefined});
   const t=await r.text();
-  console.log(`[API] ${method} ${path}`,r.status,t.slice(0,300));
   if(!r.ok){
     let msg=r.statusText;
     try{const e=JSON.parse(t);msg=e.error||e.message||e.detail||e.hint||JSON.stringify(e)||msg}catch{}
@@ -534,6 +533,7 @@ const OUT_CATS=[];
 const IN_CATS=[];
 
 function loadCats(){
+  // Load from localStorage as offline cache/fallback only
   try{
     const uid=S.user?.id||'guest';
     const o=localStorage.getItem('dk_cats_out_'+uid);
@@ -563,6 +563,7 @@ async function _pushCatsToApi(){
     }
   }catch(e){console.warn('cats sync err',e);}
 }
+// syncCatsFromApi — API is the source of truth for categories
 async function syncCatsFromApi(){
   if(!S.user?.id)return;
   try{
@@ -574,8 +575,12 @@ async function syncCatsFromApi(){
       OUT_CATS.length=0;IN_CATS.length=0;
       o.forEach(c=>OUT_CATS.push(c));
       (i.length?i:DEFAULT_IN_CATS).forEach(c=>IN_CATS.push(c));
+      // Update localStorage cache after API sync
       localStorage.setItem('dk_cats_out_'+uid,JSON.stringify(OUT_CATS));
       localStorage.setItem('dk_cats_in_'+uid,JSON.stringify(IN_CATS));
+    }else{
+      // No API data yet — push current cats to API so it's stored for other devices
+      if(OUT_CATS.length)await _pushCatsToApi().catch(()=>{});
     }
   }catch(e){console.warn('cats pull err',e);}
 }
@@ -689,13 +694,15 @@ async function authSubmit(){
 async function doLogin(usr){
   S.user={id:usr.id,username:usr.username};
   localStorage.setItem('dk_sess',JSON.stringify(S.user));
-  loadCats();
+  loadCats(); // Load localStorage cache first (fast)
+  // Sync categories from API before showing UI — ensures same data on every device
+  await syncCatsFromApi().catch(()=>{});
   await loadAll();
-  // Sync kategori dari API (background, setelah UI sudah tampil)
-  syncCatsFromApi().then(()=>{rSetCats();}).catch(()=>{});
   document.getElementById('auth-page').classList.remove('active');
   document.getElementById('app').style.display='flex';
   navTo('home');
+  // Refresh category UI after login
+  rSetCats();
 }
 function logout(){
   localStorage.removeItem('dk_sess');
@@ -716,7 +723,7 @@ async function loadAll(){
     dbG(`dk_savings?user_id=eq.${uid}&deleted_at=is.null`),
     dbG(`dk_routines?user_id=eq.${uid}&deleted_at=is.null`)
   ]);
-  S.budgets=budgets.map(b=>({...b,limit:toNum(b.budget_limit||b.amount||b.limit)}));
+  S.budgets=budgets.map(b=>({...b,limit:toNum(b.amount)}));
   S.savings=savings.map(s=>({...s,target:toNum(s.target),saved:toNum(s.saved)}));
   S.routines=routines.map(r=>({...r,amount:toNum(r.amount)}));
   if(!wallets.length){
@@ -770,8 +777,9 @@ function rHome(){
     return;
   }
   const now=new Date();
-  const moTrx=S.trx.filter(t=>{const d=new Date(t.date);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear()&&t.wallet_id===S.wid});
-  const moTrxAll=S.trx.filter(t=>{const d=new Date(t.date);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear()});
+  const parseD=d=>{if(!d)return new Date(0);const p=String(d).split('T')[0].split('-');return new Date(+p[0],+p[1]-1,+p[2])};
+  const moTrx=S.trx.filter(t=>{const d=parseD(t.date);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear()&&t.wallet_id===S.wid});
+  const moTrxAll=S.trx.filter(t=>{const d=parseD(t.date);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear()});
   // Pemasukan & pengeluaran: pakai SEMUA dompet bukan hanya yang aktif
   const moIn=moTrxAll.filter(t=>t.type==='in'&&t.category!=='transfer').reduce((a,t)=>a+toNum(t.amount),0);
   const moOut=moTrxAll.filter(t=>t.type==='out'&&t.category!=='transfer').reduce((a,t)=>a+toNum(t.amount),0);
@@ -905,7 +913,8 @@ function setTrxType(type){
   curTrxType=type;
   document.getElementById('tb-out').classList.toggle('on',type==='out');
   document.getElementById('tb-in').classList.toggle('on',type==='in');
-  fillCatChips('tf-cat-chips','tf-cat',type==='in'?IN_CATS:OUT_CATS,'',type);
+  const tCats=type==='in'?(IN_CATS.length?IN_CATS:DEFAULT_IN_CATS):(OUT_CATS.length?OUT_CATS:DEFAULT_OUT_CATS);
+  fillCatChips('tf-cat-chips','tf-cat',tCats,'',type);
 }
 function fillCatChips(containerId,hiddenId,cats,cur,type){
   const container=document.getElementById(containerId);
@@ -948,7 +957,7 @@ function openTrxAdd(){
   });
   curTrxType='out';
   document.getElementById('tb-out').classList.add('on');document.getElementById('tb-in').classList.remove('on');
-  fillCatChips('tf-cat-chips','tf-cat',OUT_CATS,'','out');
+  fillCatChips('tf-cat-chips','tf-cat',OUT_CATS.length?OUT_CATS:DEFAULT_OUT_CATS,'','out');
   const sel=document.getElementById('tf-wallet');
   sel.innerHTML=S.wallets.map(w=>`<option value="${esc(w.id)}">${esc(w.name)} — ${rp(w.balance)}</option>`).join('');
   sel.value=S.wid||S.wallets[0]?.id;
@@ -975,7 +984,8 @@ function openTrxEdit(id){
     if(chipsContainer)chipsContainer.innerHTML=`<div class="cat-chip selected neutral" data-v="transfer">Transfer</div>`;
     document.getElementById('tf-cat').value='transfer';
   }else{
-    fillCatChips('tf-cat-chips','tf-cat',t.type==='in'?IN_CATS:OUT_CATS,t.category||'',t.type);
+    const eCats=t.type==='in'?(IN_CATS.length?IN_CATS:DEFAULT_IN_CATS):(OUT_CATS.length?OUT_CATS:DEFAULT_OUT_CATS);
+    fillCatChips('tf-cat-chips','tf-cat',eCats,t.category||'',t.type);
   }
   const sel=document.getElementById('tf-wallet');
   sel.innerHTML=S.wallets.map(w=>`<option value="${esc(w.id)}">${esc(w.name)}</option>`).join('');
@@ -996,6 +1006,10 @@ async function saveTrx(){
   const isEditTransfer=oldTrx?.category==='transfer';
   const data={user_id:S.user.id,wallet_id:wid,type:isEditTransfer?oldTrx.type:curTrxType,amount:amt,category:isEditTransfer?'transfer':cat,date,note:document.getElementById('tf-note').value.trim()||null};
   try{
+    // Ambil saldo TERKINI dari server sebelum update (hindari saldo stale)
+    const freshWallets=await dbG(`dk_wallets?user_id=eq.${S.user.id}&deleted_at=is.null`);
+    freshWallets.forEach(fw=>{const sw=S.wallets.find(x=>x.id===fw.id);if(sw)sw.balance=toNum(fw.balance);});
+
     const w=S.wallets.find(x=>x.id===wid);
     if(!w){toast('Dompet tidak ditemukan','e');return}
     if(oldTrx&&oldTrx.wallet_id!==wid){
@@ -1026,11 +1040,6 @@ async function saveTrx(){
       S.trx.unshift({...trx,amount:toNum(trx.amount)});
     }
     csh('sh-tf');toast(id?'Transaksi diperbarui':'Transaksi dicatat','ok');rHome();rTrx();
-    // Sync balances
-    dbG(`dk_wallets?user_id=eq.${S.user.id}&deleted_at=is.null`).then(ws=>{
-      ws.forEach(dw=>{const sw=S.wallets.find(x=>x.id===dw.id);if(sw)sw.balance=toNum(dw.balance)});
-      rHome();rTrx();
-    }).catch(()=>{});
   }catch(err){toast('Gagal: '+err.message,'e')}
 }
 async function delTrx(){
@@ -1075,11 +1084,20 @@ function setBudgetPeriod(p){
 function rBudget(){
   const li=document.getElementById('b-list');
   const now=new Date();
+  // Parse date string safely without timezone shift (YYYY-MM-DD)
+  const parseDate=d=>{if(!d)return new Date(0);const p=String(d).split('T')[0].split('-');return new Date(+p[0],+p[1]-1,+p[2])};
   const inPeriod=d=>{
-    const dt=new Date(d);
-    if(budgetPeriod==='week'){const ws=new Date(now);ws.setDate(now.getDate()-now.getDay());ws.setHours(0,0,0,0);return dt>=ws}
+    const dt=parseDate(d);
+    if(budgetPeriod==='week'){
+      // Week starts Monday (Indonesian standard)
+      const ws=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+      const day=ws.getDay();
+      ws.setDate(ws.getDate()-(day===0?6:day-1)); // Mon=0 offset
+      return dt>=ws;
+    }
     return dt.getMonth()===now.getMonth()&&dt.getFullYear()===now.getFullYear();
   };
+  const periodLabel=budgetPeriod==='week'?'Minggu Ini':'Bulan Ini';
   const moTrx=S.trx.filter(t=>t.type==='out'&&t.category!=='transfer'&&inPeriod(t.date));
   if(!S.budgets.length){li.innerHTML=`<div class="empty"><div class="empty-title">Belum ada budget</div><div class="empty-sub">Tap + untuk set limit pengeluaran per kategori</div></div>`;return}
   li.innerHTML=S.budgets.map(b=>{
@@ -1089,7 +1107,7 @@ function rBudget(){
     const color=pct>=1?'var(--red)':pct>=0.7?'var(--gold)':'var(--green)';
     return`<div class="card mt8" style="cursor:pointer" onclick="openBudgetEdit('${b.id}')">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-        <div><div style="font-weight:700;font-size:14px">${ci.l}</div><div style="font-size:11px;color:var(--muted)">${rp(spent)} dari ${rp(b.limit)}</div></div>
+        <div><div style="font-weight:700;font-size:14px">${ci.l}</div><div style="font-size:11px;color:var(--muted)">${rp(spent)} dari ${rp(b.limit)} · ${periodLabel}</div></div>
         <div class="badge ${pct>=1?'r':pct>=0.7?'gold':'g'}">${(pct*100).toFixed(0)}%</div>
       </div>
       <div class="prog"><div class="prog-f" style="width:${Math.min(pct*100,100).toFixed(0)}%;background:${color}"></div></div>
@@ -1103,8 +1121,12 @@ function openBudgetAdd(){
   document.getElementById('bf-limit').value='';
   document.getElementById('bf-del').style.display='none';
   document.getElementById('sh-bf-t').textContent='Tambah Budget';
+  const lbl=document.getElementById('bf-limit-lbl');
+  if(lbl)lbl.textContent=(budgetPeriod==='week'?'Limit per Minggu (Rp)':'Limit per Bulan (Rp)');
+  // Use OUT_CATS (synced from API), fallback to defaults if empty
+  const cats=OUT_CATS.length?OUT_CATS:DEFAULT_OUT_CATS;
   const usedCats=S.budgets.map(b=>b.category);
-  const avail=OUT_CATS.filter(c=>!usedCats.includes(c.v));
+  const avail=cats.filter(c=>!usedCats.includes(c.v));
   if(!avail.length){toast('Semua kategori sudah punya budget','i');return}
   fillCatChips('bf-cat-chips','bf-cat',avail,'','out');
   osh('sh-bf');
@@ -1116,7 +1138,10 @@ function openBudgetEdit(id){
   document.getElementById('bf-limit').value=b.limit;
   document.getElementById('bf-del').style.display='';
   document.getElementById('sh-bf-t').textContent='Edit Budget';
-  fillCatChips('bf-cat-chips','bf-cat',OUT_CATS,b.category,'out');
+  const lbl2=document.getElementById('bf-limit-lbl');
+  if(lbl2)lbl2.textContent=(budgetPeriod==='week'?'Limit per Minggu (Rp)':'Limit per Bulan (Rp)');
+  const editCats=OUT_CATS.length?OUT_CATS:DEFAULT_OUT_CATS;
+  fillCatChips('bf-cat-chips','bf-cat',editCats,b.category,'out');
   osh('sh-bf');
 }
 async function saveBudget(){
@@ -1126,33 +1151,21 @@ async function saveBudget(){
   if(!limitVal||limitVal<=0){toast('Limit wajib diisi','e');return}
   const id=document.getElementById('bf-id').value;
   if(!id&&S.budgets.find(b=>b.category===cat)){toast('Budget kategori ini sudah ada','e');return}
-  const data={user_id:S.user.id,category:cat,budget_limit:limitVal,amount:limitVal};
+  const data={user_id:S.user.id,category:cat,amount:limitVal};
   try{
     if(id){
       await dbU(`dk_budgets?id=eq.${id}`,data);
       const i=S.budgets.findIndex(b=>b.id===id);if(i!==-1)S.budgets[i]={...S.budgets[i],...data,limit:limitVal};
     }else{
       const newId=nuid();
-      // POST langsung dengan fetch untuk lihat raw error
-      const r=await fetch(`${API}/api/db/dk_budgets`,{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({...data,id:newId})
-      });
-      const rawText=await r.text();
-      console.log('[BUDGET POST] status:',r.status,'body:',rawText);
-      if(!r.ok){
-        let msg=rawText;
-        try{const e=JSON.parse(rawText);msg=e.error||e.message||e.detail||e.hint||JSON.stringify(e);}catch{}
-        toast('Gagal: '+msg,'e');return;
-      }
-      const res=rawText?JSON.parse(rawText):[];
+      const res=await dbP('dk_budgets',{...data,id:newId});
       const b=(Array.isArray(res)&&res.length)?res[0]:{...data,id:newId};
-      S.budgets.push({...b,limit:toNum(b.amount||b.budget_limit||b.limit)});
+      S.budgets.push({...b,limit:toNum(b.amount)});
     }
     csh('sh-bf');toast(id?'Budget diperbarui':'Budget ditambahkan','ok');rBudget();rHome();
-  }catch(err){console.error('[BUDGET ERR]',err);toast('Gagal: '+err.message,'e')}
+  }catch(err){toast('Gagal: '+err.message,'e')}
 }
+
 async function delBudget(){
   const id=document.getElementById('bf-id').value;
   confirmSheet('Hapus budget ini?','Data tidak bisa dikembalikan.',async()=>{
@@ -1793,16 +1806,19 @@ function downloadPDF(htmlContent,type,bulan){
 // ── INIT ──────────────────────────────────────────────
 async function init(){
   initTheme();
-  fetch(`${API}/api/db/dk_users?select=id`).catch(()={});
+  fetch(`${API}/api/db/dk_users?select=id`).catch(()=>{});
   const sess=localStorage.getItem('dk_sess');
   if(sess){
     try{
       S.user=JSON.parse(sess);
-      loadCats();
+      loadCats(); // Load localStorage cache first (fast)
+      // Sync categories from API before showing UI — ensures same data on every device
+      await syncCatsFromApi().catch(()=>{});
       await loadAll();
       document.getElementById('auth-page').classList.remove('active');
       document.getElementById('app').style.display='flex';
       navTo('home');
+      rSetCats();
     }catch{
       localStorage.removeItem('dk_sess');
       document.getElementById('auth-page').classList.add('active');
