@@ -297,7 +297,11 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
         <button class="btn btn-s mt8" onclick="openRoutineAdd()">+ Tambah Rutin</button>
       </div>
       <div>
-        <div class="sec-title" style="padding:0 0 10px">Kategori Pengeluaran</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:0 0 10px">
+          <div class="sec-title" style="padding:0">Kategori Pengeluaran</div>
+          <button onclick="manualSyncCats()" style="font-size:11px;font-weight:700;padding:5px 10px;border-radius:8px;background:var(--al);border:1px solid var(--border);cursor:pointer;color:var(--text2);font-family:'DM Sans',sans-serif">↻ Sync</button>
+        </div>
+        <div id="cats-sync-status" style="font-size:11px;color:var(--muted);margin-bottom:8px"></div>
         <div id="set-out-cats" style="max-height:240px;overflow-y:auto;border-radius:var(--radius-sm)"></div>
         <button class="btn btn-s mt8" onclick="openCatAdd('out')">+ Tambah Kategori</button>
       </div>
@@ -545,26 +549,40 @@ function saveCatsToCache(){
 }
 async function pushCatsToApi(){
   const uid=S.user?.id;if(!uid)return;
+  const payload={cats_out:JSON.stringify(OUT_CATS),cats_in:JSON.stringify(IN_CATS)};
+  // Coba upsert: hapus dulu lalu insert baru (lebih aman dari PATCH)
   try{
     const exist=await dbG('dk_settings?user_id=eq.'+uid+'&key=eq.cats');
-    const payload={cats_out:JSON.stringify(OUT_CATS),cats_in:JSON.stringify(IN_CATS)};
     if(exist&&exist.length){
-      await dbU('dk_settings?user_id=eq.'+uid+'&key=eq.cats',{...payload,key:'cats'});
+      // Gunakan PATCH dengan prefer=return=representation
+      await dbU('dk_settings?user_id=eq.'+uid+'&key=eq.cats',payload);
     }else{
       await dbP('dk_settings',{id:'cats_'+uid,user_id:uid,key:'cats',...payload});
     }
-  }catch(e){console.warn('cats push err',e);}
+    console.log('[Duitku] cats pushed OK');
+  }catch(e){
+    console.error('[Duitku] cats push FAILED:',e.message);
+    // Coba fallback: POST dengan id baru jika ID conflict
+    try{
+      await dbP('dk_settings',{id:'cats_'+uid+'_'+Date.now(),user_id:uid,key:'cats',...payload});
+      console.log('[Duitku] cats pushed via fallback');
+    }catch(e2){
+      console.error('[Duitku] cats push fallback FAILED:',e2.message);
+    }
+  }
 }
 async function syncCatsFromApi(){
   const uid=S.user?.id;if(!uid)return;
   try{
-    const rows=await dbG('dk_settings?user_id=eq.'+uid+'&key=eq.cats');
+    const rows=await dbG('dk_settings?user_id=eq.'+uid+'&key=eq.cats&order=id.desc&limit=1');
+    console.log('[Duitku] sync cats rows:',rows);
     if(rows&&rows.length&&rows[0].cats_out){
       const o=JSON.parse(rows[0].cats_out);
       const i=JSON.parse(rows[0].cats_in||'[]');
       OUT_CATS.length=0;IN_CATS.length=0;
       o.forEach(c=>OUT_CATS.push(c));
       (i.length?i:DEFAULT_IN_CATS).forEach(c=>IN_CATS.push(c));
+      console.log('[Duitku] cats loaded from API: out='+OUT_CATS.length+' in='+IN_CATS.length);
     }else{
       // Belum ada di API — inisialisasi dengan default lalu push
       if(!OUT_CATS.length)DEFAULT_OUT_CATS.forEach(c=>OUT_CATS.push(c));
@@ -574,11 +592,16 @@ async function syncCatsFromApi(){
     saveCatsToCache();
     // Update UI kategori jika settings page sudah ter-render
     if(document.getElementById('set-out-cats'))rSetCats();
-  }catch(e){console.warn('cats sync err',e);}
+  }catch(e){
+    console.error('[Duitku] cats sync FAILED:',e.message);
+  }
 }
 function saveCats(){
   saveCatsToCache();
-  pushCatsToApi();
+  pushCatsToApi().then(()=>{
+    // Verifikasi: baca ulang dari API untuk konfirmasi tersimpan
+    syncCatsFromApi().catch(()=>{});
+  });
 }
 
 // catInfo: resolve label kategori dari cats yang sudah sync
@@ -1450,6 +1473,42 @@ function rSet(){
     }).join('');
   document.getElementById('dark-tog').checked=document.documentElement.getAttribute('data-theme')==='dark';
   rSetCats();
+}
+
+function setCatsSyncStatus(msg,ok){
+  const el=document.getElementById('cats-sync-status');
+  if(el){el.textContent=msg;el.style.color=ok===true?'var(--green)':ok===false?'var(--red)':'var(--muted)';}
+}
+async function manualSyncCats(){
+  setCatsSyncStatus('Memuat dari server…',null);
+  const uid=S.user?.id;
+  if(!uid){setCatsSyncStatus('Tidak ada sesi user','e');return}
+  try{
+    const rows=await dbG('dk_settings?user_id=eq.'+uid+'&key=eq.cats&order=id.desc&limit=1');
+    console.log('[Duitku] manualSync rows:',JSON.stringify(rows));
+    if(!rows||!rows.length){
+      setCatsSyncStatus('❌ Tabel dk_settings kosong atau belum ada. Mencoba push…',false);
+      await pushCatsToApi();
+      setCatsSyncStatus('✓ Data default di-push ke server. Coba sync lagi.',true);
+      return;
+    }
+    const row=rows[0];
+    if(!row.cats_out){
+      setCatsSyncStatus('❌ Kolom cats_out tidak ada di tabel dk_settings. Struktur tabel perlu diupdate.',false);
+      return;
+    }
+    const o=JSON.parse(row.cats_out);
+    const i=JSON.parse(row.cats_in||'[]');
+    OUT_CATS.length=0;IN_CATS.length=0;
+    o.forEach(c=>OUT_CATS.push(c));
+    (i.length?i:DEFAULT_IN_CATS).forEach(c=>IN_CATS.push(c));
+    saveCatsToCache();
+    rSetCats();
+    setCatsSyncStatus(`✓ Sync berhasil: ${OUT_CATS.length} kat. keluar, ${IN_CATS.length} kat. masuk`,true);
+  }catch(e){
+    console.error('[Duitku] manualSync error:',e);
+    setCatsSyncStatus('❌ Error: '+e.message,false);
+  }
 }
 
 // ── CATEGORY MANAGEMENT ───────────────────────────────
