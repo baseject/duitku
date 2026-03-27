@@ -1171,41 +1171,36 @@ async function saveBudget(){
 
   try{
     if(id){
+      // Edit: hanya update limit
       await dbU(`dk_budgets?id=eq.${id}`,{[BUDGET_LIMIT_COL]:limitVal});
       const i=S.budgets.findIndex(b=>b.id===id);
       if(i!==-1)S.budgets[i]={...S.budgets[i],limit:limitVal};
       toast('Budget diperbarui','ok');
       csh('sh-bf');rBudget();rHome();
-    }else{
-      // Coba PATCH dulu (kalau sudah ada di DB tapi tidak di memori)
-      await dbU(
-        `dk_budgets?user_id=eq.${S.user.id}&category=eq.${cat}&deleted_at=is.null`,
-        {[BUDGET_LIMIT_COL]:limitVal}
-      );
-      // Reload budgets dari API untuk pastikan data terbaru
-      await reloadBudgets();
-      toast('Budget disimpan','ok');
-      csh('sh-bf');rBudget();rHome();
+      return;
     }
+
+    // Tambah: cek di DB apakah ada row (aktif ATAU soft-deleted) untuk kategori ini
+    const uid=S.user.id;
+    const existing=await dbG(`dk_budgets?user_id=eq.${uid}&category=eq.${cat}`);
+
+    if(existing&&existing.length){
+      // Row ada (mungkin soft-deleted) — reaktivasi + update limit
+      await dbU(`dk_budgets?user_id=eq.${uid}&category=eq.${cat}`,{
+        [BUDGET_LIMIT_COL]:limitVal,
+        deleted_at:null
+      });
+    }else{
+      // Benar-benar baru
+      const newId=nuid();
+      await dbP('dk_budgets',{id:newId,user_id:uid,category:cat,[BUDGET_LIMIT_COL]:limitVal});
+    }
+
+    await reloadBudgets();
+    toast('Budget disimpan','ok');
+    csh('sh-bf');rBudget();rHome();
   }catch(err){
-    // PATCH gagal karena baris tidak ada → INSERT
-    if(!id){
-      try{
-        const newId=nuid();
-        const payload={id:newId,user_id:S.user.id,category:cat,[BUDGET_LIMIT_COL]:limitVal};
-        await dbP('dk_budgets',payload);
-        await reloadBudgets();
-        toast('Budget ditambahkan','ok');
-        csh('sh-bf');rBudget();rHome();
-      }catch(e2){
-        if(e2.message.includes('duplicate')||e2.message.includes('unique')){
-          // Race condition: sudah ada, coba reload saja
-          await reloadBudgets();
-          toast('Budget sudah ada, data diperbarui','ok');
-          csh('sh-bf');rBudget();rHome();
-        }else{toast('Gagal: '+e2.message,'e')}
-      }
-    }else{toast('Gagal: '+err.message,'e')}
+    toast('Gagal: '+err.message,'e');
   }
 }
 async function delBudget(){
