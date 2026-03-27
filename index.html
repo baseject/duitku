@@ -1158,37 +1158,53 @@ async function saveBudget(){
   const limitVal=parseFloat(document.getElementById('bf-limit').value);
   if(!limitVal||limitVal<=0){toast('Limit wajib diisi','e');return}
   const id=document.getElementById('bf-id').value;
+
+  async function reloadBudgets(){
+    const uid=S.user.id;
+    const rows=await dbG(`dk_budgets?user_id=eq.${uid}&deleted_at=is.null`);
+    if(rows.length){
+      const s=rows[0];
+      BUDGET_LIMIT_COL='budget_limit' in s?'budget_limit':('amount' in s?'amount':'limit');
+    }
+    S.budgets=rows.map(b=>({...b,limit:toNum(b.budget_limit??b.limit??b.amount??0)}));
+  }
+
   try{
     if(id){
-      // Edit: hanya update limit saja, jangan kirim category
       await dbU(`dk_budgets?id=eq.${id}`,{[BUDGET_LIMIT_COL]:limitVal});
       const i=S.budgets.findIndex(b=>b.id===id);
       if(i!==-1)S.budgets[i]={...S.budgets[i],limit:limitVal};
       toast('Budget diperbarui','ok');
+      csh('sh-bf');rBudget();rHome();
     }else{
-      // Tambah: selalu coba update existing dulu (berdasarkan user+category di DB)
-      // Ini menghindari duplicate key walau S.budgets tidak sinkron sempurna
-      const upd=await dbU(
+      // Coba PATCH dulu (kalau sudah ada di DB tapi tidak di memori)
+      await dbU(
         `dk_budgets?user_id=eq.${S.user.id}&category=eq.${cat}&deleted_at=is.null`,
         {[BUDGET_LIMIT_COL]:limitVal}
       );
-      // Reload data dari API agar S.budgets sinkron
-      await loadAll();
+      // Reload budgets dari API untuk pastikan data terbaru
+      await reloadBudgets();
       toast('Budget disimpan','ok');
+      csh('sh-bf');rBudget();rHome();
     }
-    csh('sh-bf');rBudget();rHome();
   }catch(err){
-    // Kalau update gagal (misal baris tidak ada), coba insert
+    // PATCH gagal karena baris tidak ada → INSERT
     if(!id){
       try{
         const newId=nuid();
         const payload={id:newId,user_id:S.user.id,category:cat,[BUDGET_LIMIT_COL]:limitVal};
-        const res=await dbP('dk_budgets',payload);
-        const b=(Array.isArray(res)&&res.length)?res[0]:payload;
-        S.budgets.push({...b,limit:toNum(b[BUDGET_LIMIT_COL]||b.limit||0)});
+        await dbP('dk_budgets',payload);
+        await reloadBudgets();
         toast('Budget ditambahkan','ok');
         csh('sh-bf');rBudget();rHome();
-      }catch(e2){toast('Gagal: '+e2.message,'e')}
+      }catch(e2){
+        if(e2.message.includes('duplicate')||e2.message.includes('unique')){
+          // Race condition: sudah ada, coba reload saja
+          await reloadBudgets();
+          toast('Budget sudah ada, data diperbarui','ok');
+          csh('sh-bf');rBudget();rHome();
+        }else{toast('Gagal: '+e2.message,'e')}
+      }
     }else{toast('Gagal: '+err.message,'e')}
   }
 }
