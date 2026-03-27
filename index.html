@@ -527,7 +527,8 @@ const DEFAULT_IN_CATS=[
 const OUT_CATS=[];
 const IN_CATS=[];
 
-// Sumber kebenaran = API. localStorage hanya cache offline.
+// Sumber kebenaran = dk_users (kolom cats_out, cats_in).
+// localStorage hanya cache offline.
 function loadCatsFromCache(){
   try{
     const uid=S.user?.id;if(!uid)return;
@@ -549,48 +550,33 @@ function saveCatsToCache(){
 }
 async function pushCatsToApi(){
   const uid=S.user?.id;if(!uid)return;
-  const payload={cats_out:JSON.stringify(OUT_CATS),cats_in:JSON.stringify(IN_CATS)};
-  // Coba upsert: hapus dulu lalu insert baru (lebih aman dari PATCH)
   try{
-    const exist=await dbG('dk_settings?user_id=eq.'+uid+'&key=eq.cats');
-    if(exist&&exist.length){
-      // Gunakan PATCH dengan prefer=return=representation
-      await dbU('dk_settings?user_id=eq.'+uid+'&key=eq.cats',payload);
-    }else{
-      await dbP('dk_settings',{id:'cats_'+uid,user_id:uid,key:'cats',...payload});
-    }
-    console.log('[Duitku] cats pushed OK');
+    await dbU('dk_users?id=eq.'+uid,{
+      cats_out:JSON.stringify(OUT_CATS),
+      cats_in:JSON.stringify(IN_CATS)
+    });
+    console.log('[Duitku] cats pushed to dk_users OK');
   }catch(e){
     console.error('[Duitku] cats push FAILED:',e.message);
-    // Coba fallback: POST dengan id baru jika ID conflict
-    try{
-      await dbP('dk_settings',{id:'cats_'+uid+'_'+Date.now(),user_id:uid,key:'cats',...payload});
-      console.log('[Duitku] cats pushed via fallback');
-    }catch(e2){
-      console.error('[Duitku] cats push fallback FAILED:',e2.message);
-    }
+    setCatsSyncStatus('❌ Gagal simpan: '+e.message,false);
   }
 }
 async function syncCatsFromApi(){
   const uid=S.user?.id;if(!uid)return;
   try{
-    const rows=await dbG('dk_settings?user_id=eq.'+uid+'&key=eq.cats&order=id.desc&limit=1');
-    console.log('[Duitku] sync cats rows:',rows);
+    const rows=await dbG('dk_users?id=eq.'+uid+'&select=cats_out,cats_in');
     if(rows&&rows.length&&rows[0].cats_out){
       const o=JSON.parse(rows[0].cats_out);
       const i=JSON.parse(rows[0].cats_in||'[]');
       OUT_CATS.length=0;IN_CATS.length=0;
       o.forEach(c=>OUT_CATS.push(c));
       (i.length?i:DEFAULT_IN_CATS).forEach(c=>IN_CATS.push(c));
-      console.log('[Duitku] cats loaded from API: out='+OUT_CATS.length+' in='+IN_CATS.length);
     }else{
-      // Belum ada di API — inisialisasi dengan default lalu push
       if(!OUT_CATS.length)DEFAULT_OUT_CATS.forEach(c=>OUT_CATS.push(c));
       if(!IN_CATS.length)DEFAULT_IN_CATS.forEach(c=>IN_CATS.push(c));
       await pushCatsToApi();
     }
     saveCatsToCache();
-    // Update UI kategori jika settings page sudah ter-render
     if(document.getElementById('set-out-cats'))rSetCats();
   }catch(e){
     console.error('[Duitku] cats sync FAILED:',e.message);
@@ -598,10 +584,7 @@ async function syncCatsFromApi(){
 }
 function saveCats(){
   saveCatsToCache();
-  pushCatsToApi().then(()=>{
-    // Verifikasi: baca ulang dari API untuk konfirmasi tersimpan
-    syncCatsFromApi().catch(()=>{});
-  });
+  pushCatsToApi();
 }
 
 // catInfo: resolve label kategori dari cats yang sudah sync
@@ -1482,19 +1465,18 @@ function setCatsSyncStatus(msg,ok){
 async function manualSyncCats(){
   setCatsSyncStatus('Memuat dari server…',null);
   const uid=S.user?.id;
-  if(!uid){setCatsSyncStatus('Tidak ada sesi user','e');return}
+  if(!uid){setCatsSyncStatus('Tidak ada sesi user',false);return}
   try{
-    const rows=await dbG('dk_settings?user_id=eq.'+uid+'&key=eq.cats&order=id.desc&limit=1');
-    console.log('[Duitku] manualSync rows:',JSON.stringify(rows));
+    const rows=await dbG('dk_users?id=eq.'+uid+'&select=cats_out,cats_in');
     if(!rows||!rows.length){
-      setCatsSyncStatus('❌ Tabel dk_settings kosong atau belum ada. Mencoba push…',false);
-      await pushCatsToApi();
-      setCatsSyncStatus('✓ Data default di-push ke server. Coba sync lagi.',true);
-      return;
+      setCatsSyncStatus('❌ User tidak ditemukan',false);return;
     }
     const row=rows[0];
     if(!row.cats_out){
-      setCatsSyncStatus('❌ Kolom cats_out tidak ada di tabel dk_settings. Struktur tabel perlu diupdate.',false);
+      // Kolom belum ada atau kosong — push default sekarang
+      setCatsSyncStatus('Kolom belum ada, mencoba push…',null);
+      await pushCatsToApi();
+      setCatsSyncStatus('✓ Data default di-push. Coba sync lagi.',true);
       return;
     }
     const o=JSON.parse(row.cats_out);
@@ -1504,9 +1486,8 @@ async function manualSyncCats(){
     (i.length?i:DEFAULT_IN_CATS).forEach(c=>IN_CATS.push(c));
     saveCatsToCache();
     rSetCats();
-    setCatsSyncStatus(`✓ Sync berhasil: ${OUT_CATS.length} kat. keluar, ${IN_CATS.length} kat. masuk`,true);
+    setCatsSyncStatus(`✓ Sync OK: ${OUT_CATS.length} kat. keluar, ${IN_CATS.length} kat. masuk`,true);
   }catch(e){
-    console.error('[Duitku] manualSync error:',e);
     setCatsSyncStatus('❌ Error: '+e.message,false);
   }
 }
