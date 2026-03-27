@@ -261,22 +261,26 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
     <div id="t-list" style="padding:0 16px 88px"></div>
   </div>
 
-  <!-- BUDGET -->
+  <!-- BUDGET & TABUNGAN -->
   <div class="page" id="pg-budget">
-    <div class="hd"><div class="hd-title">Budget</div></div>
-    <div style="padding:16px 16px 8px">
+    <div class="hd">
+      <div class="hd-title" id="budget-page-title">Budget</div>
+    </div>
+    <div style="padding:12px 16px 8px">
+      <div class="seg" id="budget-main-seg">
+        <div class="seg-b on" onclick="setBudgetTab('budget')">Budget</div>
+        <div class="seg-b" onclick="setBudgetTab('saving')">Tabungan</div>
+      </div>
+    </div>
+    <!-- Budget sub-period seg -->
+    <div id="budget-period-wrap" style="padding:0 16px 8px">
       <div class="seg">
         <div class="seg-b on" onclick="setBudgetPeriod('month')">Bulan Ini</div>
         <div class="seg-b" onclick="setBudgetPeriod('week')">Minggu Ini</div>
       </div>
     </div>
     <div id="b-list" style="padding:0 16px 88px"></div>
-  </div>
-
-  <!-- TABUNGAN -->
-  <div class="page" id="pg-saving">
-    <div class="hd"><div class="hd-title">Tabungan</div></div>
-    <div id="sv-list" style="padding:16px 16px 88px;display:flex;flex-direction:column;gap:10px"></div>
+    <div id="sv-list" style="padding:16px 16px 88px;display:flex;flex-direction:column;gap:10px;display:none"></div>
   </div>
 
   <!-- CHART -->
@@ -359,13 +363,13 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
       <svg viewBox="0 0 24 24" fill="none"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/><rect x="9" y="3" width="6" height="4" rx="1" stroke="currentColor" stroke-width="1.75"/><path d="M9 12h6M9 16h4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg>
       Transaksi
     </div>
+    <div class="ni" onclick="navTo('budget')" id="ni-budget">
+      <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" stroke-width="1.75"/><path d="M3 9H21M9 21V9" stroke="currentColor" stroke-width="1.75"/></svg>
+      Budget
+    </div>
     <div class="ni" onclick="navTo('chart')" id="ni-chart">
       <svg viewBox="0 0 24 24" fill="none"><path d="M3 3v18h18" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/><path d="M7 16l4-4 4 4 4-6" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>
       Grafik
-    </div>
-    <div class="ni" onclick="navTo('saving')" id="ni-saving">
-      <svg viewBox="0 0 24 24" fill="none"><path d="M19 7H5C3.9 7 3 7.9 3 9V18C3 19.1 3.9 20 5 20H19C20.1 20 21 19.1 21 18V9C21 7.9 20.1 7 19 7Z" stroke="currentColor" stroke-width="1.75"/><path d="M16 7V6a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v1" stroke="currentColor" stroke-width="1.75"/><circle cx="12" cy="13.5" r="2" stroke="currentColor" stroke-width="1.75"/></svg>
-      Tabungan
     </div>
     <div class="ni" onclick="navTo('settings')" id="ni-settings">
       <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3" stroke="currentColor" stroke-width="1.75"/><path d="M6 20c0-2.2 2.7-4 6-4s6 1.8 6 4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg>
@@ -663,22 +667,41 @@ function applyTheme(dark){
 function toggleTheme(){applyTheme(document.documentElement.getAttribute('data-theme')!=='dark')}
 
 // ── NAVIGATION ────────────────────────────────────────
-const FAB_PAGES={trx:openTrxAdd,budget:openBudgetAdd,saving:openSavingAdd};
+const FAB_PAGES={trx:openTrxAdd,budget:openBudgetOrSavingAdd,chart:null,saving:openSavingAdd};
 let _fabPage='';
+let _budgetTab='budget';
 function globalFabClick(){const fn=FAB_PAGES[_fabPage];if(fn)fn();}
+function openBudgetOrSavingAdd(){
+  if(_budgetTab==='saving')openSavingAdd();
+  else openBudgetAdd();
+}
+function setBudgetTab(tab){
+  _budgetTab=tab;
+  document.querySelectorAll('#budget-main-seg .seg-b').forEach((b,i)=>b.classList.toggle('on',['budget','saving'][i]===tab));
+  document.getElementById('budget-page-title').textContent=tab==='saving'?'Tabungan':'Budget';
+  document.getElementById('budget-period-wrap').style.display=tab==='budget'?'':'none';
+  document.getElementById('b-list').style.display=tab==='budget'?'':'none';
+  document.getElementById('sv-list').style.display=tab==='saving'?'flex':'none';
+  if(tab==='budget')rBudget();
+  else rSaving();
+}
 function navTo(p){
   document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
   document.querySelectorAll('.ni').forEach(x=>x.classList.remove('on'));
-  document.getElementById('pg-'+p).classList.add('active');
-  const ni=document.getElementById('ni-'+p);if(ni)ni.classList.add('on');
+  // 'saving' tidak punya page sendiri — arahkan ke budget tab
+  const pg=p==='saving'?'budget':p;
+  document.getElementById('pg-'+pg).classList.add('active');
+  const ni=document.getElementById('ni-'+pg);if(ni)ni.classList.add('on');
   const fab=document.getElementById('global-fab');
-  if(fab){_fabPage=p;fab.style.display=FAB_PAGES[p]?'flex':'none';}
-  if(p==='home')rHome();
-  else if(p==='trx')rTrx();
-  else if(p==='budget')rBudget();
-  else if(p==='saving')rSaving();
-  else if(p==='chart')rChart();
-  else if(p==='settings')rSet();
+  if(fab){_fabPage=pg;fab.style.display=FAB_PAGES[pg]!==null&&FAB_PAGES[pg]?'flex':'none';}
+  if(pg==='home')rHome();
+  else if(pg==='trx')rTrx();
+  else if(pg==='budget'){
+    if(p==='saving')setBudgetTab('saving');
+    else setBudgetTab(_budgetTab||'budget');
+  }
+  else if(pg==='chart')rChart();
+  else if(pg==='settings')rSet();
 }
 
 // ── SHEETS ────────────────────────────────────────────
