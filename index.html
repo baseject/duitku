@@ -297,10 +297,7 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
         <button class="btn btn-s mt8" onclick="openRoutineAdd()">+ Tambah Rutin</button>
       </div>
       <div>
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:0 0 10px">
-          <div class="sec-title" style="padding:0">Kategori Pengeluaran</div>
-          <button onclick="manualSyncCats()" style="font-size:11px;font-weight:700;padding:5px 10px;border-radius:8px;background:var(--al);border:1px solid var(--border);cursor:pointer;color:var(--text2);font-family:'DM Sans',sans-serif">↻ Sync</button>
-        </div>
+        <div class="sec-title" style="padding:0 0 10px">Kategori Pengeluaran</div>
         <div id="cats-sync-status" style="font-size:11px;color:var(--muted);margin-bottom:8px"></div>
         <div id="set-out-cats" style="max-height:240px;overflow-y:auto;border-radius:var(--radius-sm)"></div>
         <button class="btn btn-s mt8" onclick="openCatAdd('out')">+ Tambah Kategori</button>
@@ -584,7 +581,9 @@ async function syncCatsFromApi(){
 }
 function saveCats(){
   saveCatsToCache();
+  // Push ke API, lalu update UI langsung dari data lokal (tidak perlu sync balik)
   pushCatsToApi();
+  rSetCats();
 }
 
 // catInfo: resolve label kategori dari cats yang sudah sync
