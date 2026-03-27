@@ -263,19 +263,11 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 
   <!-- BUDGET & TABUNGAN -->
   <div class="page" id="pg-budget">
-    <div class="hd">
-      <div class="hd-title">Budget</div>
-    </div>
+    <div class="hd"><div class="hd-title">Budget & Tabungan</div></div>
     <div style="padding:12px 16px 8px">
       <div class="seg" id="budget-main-seg">
         <div class="seg-b on" onclick="setBudgetTab('budget')">Budget</div>
         <div class="seg-b" onclick="setBudgetTab('saving')">Tabungan</div>
-      </div>
-    </div>
-    <div id="budget-period-wrap" style="padding:0 16px 8px">
-      <div class="seg">
-        <div class="seg-b on" onclick="setBudgetPeriod('month')">Bulan Ini</div>
-        <div class="seg-b" onclick="setBudgetPeriod('week')">Minggu Ini</div>
       </div>
     </div>
     <div id="b-list" style="padding:0 16px 88px"></div>
@@ -677,38 +669,27 @@ function openBudgetOrSavingAdd(){
 function setBudgetTab(tab){
   _budgetTab=tab;
   document.querySelectorAll('#budget-main-seg .seg-b').forEach((b,i)=>b.classList.toggle('on',['budget','saving'][i]===tab));
-  const periodWrap=document.getElementById('budget-period-wrap');
-  const bList=document.getElementById('b-list');
-  const svList=document.getElementById('sv-list');
-  if(tab==='budget'){
-    periodWrap.style.display='';
-    bList.style.display='';
-    svList.style.display='none';
-    rBudget();
-  }else{
-    periodWrap.style.display='none';
-    bList.style.display='none';
-    svList.style.display='flex';
-    rSaving();
-  }
+  const isBudget=tab==='budget';
+  document.getElementById('b-list').style.display=isBudget?'':'none';
+  document.getElementById('sv-list').style.display=isBudget?'none':'flex';
+  if(isBudget)rBudget(); else rSaving();
   const fab=document.getElementById('global-fab');
   if(fab)fab.style.display='flex';
 }
 function navTo(p){
   document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
   document.querySelectorAll('.ni').forEach(x=>x.classList.remove('on'));
-  // 'saving' tidak punya page sendiri — arahkan ke budget tab
-  const pg=p==='saving'?'budget':p;
-  document.getElementById('pg-'+pg).classList.add('active');
+  const pg=(p==='saving')?'budget':p;
+  const pageEl=document.getElementById('pg-'+pg);
+  if(pageEl)pageEl.classList.add('active');
   const ni=document.getElementById('ni-'+pg);if(ni)ni.classList.add('on');
   const fab=document.getElementById('global-fab');
-  if(fab){_fabPage=pg;fab.style.display=FAB_PAGES[pg]!==null&&FAB_PAGES[pg]?'flex':'none';}
+  const hasFab=!!FAB_PAGES[pg];
+  if(fab)fab.style.display=hasFab?'flex':'none';
+  _fabPage=pg;
   if(pg==='home')rHome();
   else if(pg==='trx')rTrx();
-  else if(pg==='budget'){
-    if(p==='saving')setBudgetTab('saving');
-    else setBudgetTab(_budgetTab||'budget');
-  }
+  else if(pg==='budget'){setBudgetTab(p==='saving'?'saving':(_budgetTab||'budget'));}
   else if(pg==='chart')rChart();
   else if(pg==='settings')rSet();
 }
@@ -1120,27 +1101,14 @@ async function delTrx(){
 }
 
 // ── BUDGET ────────────────────────────────────────────
-let budgetPeriod='month';
-function setBudgetPeriod(p){
-  budgetPeriod=p;
-  document.querySelectorAll('#pg-budget .seg-b').forEach((b,i)=>b.classList.toggle('on',['month','week'][i]===p));
-  rBudget();
-}
 function rBudget(){
   const li=document.getElementById('b-list');
   const now=new Date();
-  const inPeriod=d=>{
-    const dt=parseLocalDate(d);
-    if(budgetPeriod==='week'){
-      const ws=new Date(now.getFullYear(),now.getMonth(),now.getDate());
-      const day=ws.getDay();
-      ws.setDate(ws.getDate()-(day===0?6:day-1));
-      return dt>=ws;
-    }
-    return dt.getMonth()===now.getMonth()&&dt.getFullYear()===now.getFullYear();
-  };
-  const periodLabel=budgetPeriod==='week'?'Minggu Ini':'Bulan Ini';
-  const moTrx=S.trx.filter(t=>t.type==='out'&&t.category!=='transfer'&&inPeriod(t.date));
+  const moTrx=S.trx.filter(t=>{
+    const d=parseLocalDate(t.date);
+    return t.type==='out'&&t.category!=='transfer'&&d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();
+  });
+  const nowLabel=now.toLocaleDateString('id-ID',{month:'long',year:'numeric'});
   if(!S.budgets.length){li.innerHTML=`<div class="empty"><div class="empty-title">Belum ada budget</div><div class="empty-sub">Tap + untuk set limit pengeluaran per kategori</div></div>`;return}
   li.innerHTML=S.budgets.map(b=>{
     const ci=catInfo(b.category,'out');
@@ -1149,7 +1117,7 @@ function rBudget(){
     const color=pct>=1?'var(--red)':pct>=0.7?'var(--gold)':'var(--green)';
     return`<div class="card mt8" style="cursor:pointer" onclick="openBudgetEdit('${b.id}')">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-        <div><div style="font-weight:700;font-size:14px">${esc(ci.l)}</div><div style="font-size:11px;color:var(--muted)">${rp(spent)} dari ${rp(b.limit)} · ${periodLabel}</div></div>
+        <div><div style="font-weight:700;font-size:14px">${esc(ci.l)}</div><div style="font-size:11px;color:var(--muted)">${rp(spent)} dari ${rp(b.limit)} · ${nowLabel}</div></div>
         <div class="badge ${pct>=1?'r':pct>=0.7?'gold':'g'}">${(pct*100).toFixed(0)}%</div>
       </div>
       <div class="prog"><div class="prog-f" style="width:${Math.min(pct*100,100).toFixed(0)}%;background:${color}"></div></div>
@@ -1164,7 +1132,7 @@ function openBudgetAdd(){
   document.getElementById('bf-del').style.display='none';
   document.getElementById('sh-bf-t').textContent='Tambah Budget';
   const lbl=document.getElementById('bf-limit-lbl');
-  if(lbl)lbl.textContent=(budgetPeriod==='week'?'Limit per Minggu (Rp)':'Limit per Bulan (Rp)');
+  if(lbl)lbl.textContent='Limit per Bulan (Rp)';
   const cats=OUT_CATS.length?OUT_CATS:DEFAULT_OUT_CATS;
   const usedCats=S.budgets.map(b=>b.category);
   const avail=cats.filter(c=>!usedCats.includes(c.v));
@@ -1180,7 +1148,7 @@ function openBudgetEdit(id){
   document.getElementById('bf-del').style.display='';
   document.getElementById('sh-bf-t').textContent='Edit Budget';
   const lbl=document.getElementById('bf-limit-lbl');
-  if(lbl)lbl.textContent=(budgetPeriod==='week'?'Limit per Minggu (Rp)':'Limit per Bulan (Rp)');
+  if(lbl)lbl.textContent='Limit per Bulan (Rp)';
   fillCatChips('bf-cat-chips','bf-cat',OUT_CATS.length?OUT_CATS:DEFAULT_OUT_CATS,b.category,'out');
   osh('sh-bf');
 }
