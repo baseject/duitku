@@ -549,7 +549,7 @@ async function pushCatsToApi(){
     const exist=await dbG('dk_settings?user_id=eq.'+uid+'&key=eq.cats');
     const payload={cats_out:JSON.stringify(OUT_CATS),cats_in:JSON.stringify(IN_CATS)};
     if(exist&&exist.length){
-      await dbU('dk_settings?user_id=eq.'+uid+'&key=eq.cats',payload);
+      await dbU('dk_settings?user_id=eq.'+uid+'&key=eq.cats',{...payload,key:'cats'});
     }else{
       await dbP('dk_settings',{id:'cats_'+uid,user_id:uid,key:'cats',...payload});
     }
@@ -572,6 +572,8 @@ async function syncCatsFromApi(){
       await pushCatsToApi();
     }
     saveCatsToCache();
+    // Update UI kategori jika settings page sudah ter-render
+    if(document.getElementById('set-out-cats'))rSetCats();
   }catch(e){console.warn('cats sync err',e);}
 }
 function saveCats(){
@@ -1668,6 +1670,16 @@ function downloadPDF(htmlContent,bulan){
   win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Duitku — Transaksi ${esc(bulan)}</title><style>@media print{body{margin:0}@page{margin:16mm;size:A4}}body{font-family:system-ui,sans-serif;background:#fff}</style></head><body>${htmlContent}<script>window.onload=function(){window.print()}<\/script></body></html>`);
   win.document.close();
 }
+
+// ── BACKGROUND CATEGORY SYNC ─────────────────────────
+// Sync ulang kategori dari API setiap 60 detik jika app aktif
+setInterval(async()=>{
+  if(S.user)await syncCatsFromApi().catch(()=>{});
+},60000);
+// Sync saat tab/window kembali aktif (ganti device / buka tab baru)
+document.addEventListener('visibilitychange',async()=>{
+  if(!document.hidden&&S.user)await syncCatsFromApi().catch(()=>{});
+});
 
 // ── PWA ───────────────────────────────────────────────
 (function initPWA(){
