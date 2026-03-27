@@ -264,7 +264,7 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
   <!-- BUDGET & TABUNGAN -->
   <div class="page" id="pg-budget">
     <div class="hd">
-      <div class="hd-title" id="budget-page-title">Budget</div>
+      <div class="hd-title">Budget</div>
     </div>
     <div style="padding:12px 16px 8px">
       <div class="seg" id="budget-main-seg">
@@ -272,7 +272,6 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
         <div class="seg-b" onclick="setBudgetTab('saving')">Tabungan</div>
       </div>
     </div>
-    <!-- Budget sub-period seg -->
     <div id="budget-period-wrap" style="padding:0 16px 8px">
       <div class="seg">
         <div class="seg-b on" onclick="setBudgetPeriod('month')">Bulan Ini</div>
@@ -280,7 +279,7 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
       </div>
     </div>
     <div id="b-list" style="padding:0 16px 88px"></div>
-    <div id="sv-list" style="padding:16px 16px 88px;display:flex;flex-direction:column;gap:10px;display:none"></div>
+    <div id="sv-list" style="padding:16px 16px 88px;flex-direction:column;gap:10px;display:none"></div>
   </div>
 
   <!-- CHART -->
@@ -678,12 +677,22 @@ function openBudgetOrSavingAdd(){
 function setBudgetTab(tab){
   _budgetTab=tab;
   document.querySelectorAll('#budget-main-seg .seg-b').forEach((b,i)=>b.classList.toggle('on',['budget','saving'][i]===tab));
-  document.getElementById('budget-page-title').textContent=tab==='saving'?'Tabungan':'Budget';
-  document.getElementById('budget-period-wrap').style.display=tab==='budget'?'':'none';
-  document.getElementById('b-list').style.display=tab==='budget'?'':'none';
-  document.getElementById('sv-list').style.display=tab==='saving'?'flex':'none';
-  if(tab==='budget')rBudget();
-  else rSaving();
+  const periodWrap=document.getElementById('budget-period-wrap');
+  const bList=document.getElementById('b-list');
+  const svList=document.getElementById('sv-list');
+  if(tab==='budget'){
+    periodWrap.style.display='';
+    bList.style.display='';
+    svList.style.display='none';
+    rBudget();
+  }else{
+    periodWrap.style.display='none';
+    bList.style.display='none';
+    svList.style.display='flex';
+    rSaving();
+  }
+  const fab=document.getElementById('global-fab');
+  if(fab)fab.style.display='flex';
 }
 function navTo(p){
   document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
