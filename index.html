@@ -62,10 +62,10 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 
 /* bottom nav */
 #bnav{height:var(--nav);min-height:var(--nav);display:flex;align-items:center;background:var(--card);border-top:1px solid var(--border);padding-bottom:env(safe-area-inset-bottom);flex-shrink:0;z-index:20}
-.ni{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:10px;font-weight:600;color:var(--muted);cursor:pointer;transition:.15s;padding:6px 0;letter-spacing:.01em}
+.ni{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:9px;font-weight:600;color:var(--muted);cursor:pointer;transition:.15s;padding:6px 2px;letter-spacing:.01em}
 .ni.on{color:var(--text)}
 .ni.on svg{stroke:var(--text)}
-.ni svg{width:22px;height:22px;stroke-width:1.75;stroke:var(--muted);fill:none;transition:.15s}
+.ni svg{width:20px;height:20px;stroke-width:1.75;stroke:var(--muted);fill:none;transition:.15s}
 
 /* cards */
 .card{background:var(--card);border-radius:var(--radius);padding:16px;box-shadow:var(--sh);border:1px solid var(--border)}
@@ -222,9 +222,6 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
         <button class="hd-btn" id="theme-btn" onclick="toggleTheme()">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
         </button>
-        <button class="hd-btn" onclick="navTo('settings')">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3"/><path d="M6 20c0-2.2 2.7-4 6-4s6 1.8 6 4" stroke-linecap="round"/></svg>
-        </button>
       </div>
     </div>
     <div style="padding:16px 20px;display:flex;flex-direction:column;gap:14px">
@@ -251,7 +248,13 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
         </div>
       </div>
     </div>
-    <div style="padding:12px 16px 8px">
+    <!-- Filter bulan -->
+    <div style="padding:10px 16px 0;display:flex;align-items:center;gap:8px">
+      <button onclick="shiftMonth(-1)" style="width:30px;height:30px;border-radius:50%;background:var(--card2);border:1px solid var(--border);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">‹</button>
+      <div id="trx-month-lbl" style="flex:1;text-align:center;font-size:13px;font-weight:700;color:var(--text);cursor:pointer" onclick="resetMonthFilter()"></div>
+      <button onclick="shiftMonth(1)" id="trx-next-btn" style="width:30px;height:30px;border-radius:50%;background:var(--card2);border:1px solid var(--border);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">›</button>
+    </div>
+    <div style="padding:8px 16px 8px">
       <div class="seg">
         <div class="seg-b on" onclick="setTrxFilter('all')">Semua</div>
         <div class="seg-b" onclick="setTrxFilter('in')">Masuk</div>
@@ -363,8 +366,8 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
       Grafik
     </div>
     <div class="ni" onclick="navTo('settings')" id="ni-settings">
-      <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3" stroke="currentColor" stroke-width="1.75"/><path d="M6 20c0-2.2 2.7-4 6-4s6 1.8 6 4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg>
-      Profil
+      <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.75"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="currentColor" stroke-width="1.75"/></svg>
+      Setelan
     </div>
   </nav>
 </div>
@@ -658,7 +661,7 @@ function applyTheme(dark){
 function toggleTheme(){applyTheme(document.documentElement.getAttribute('data-theme')!=='dark')}
 
 // ── NAVIGATION ────────────────────────────────────────
-const FAB_PAGES={trx:openTrxAdd,budget:openBudgetOrSavingAdd,chart:null,saving:openSavingAdd};
+const FAB_PAGES={home:openTrxAdd,trx:openTrxAdd,budget:openBudgetOrSavingAdd,saving:openSavingAdd};
 let _fabPage='';
 let _budgetTab='budget';
 function globalFabClick(){const fn=FAB_PAGES[_fabPage];if(fn)fn();}
@@ -746,14 +749,30 @@ async function doLogin(usr){
   navTo('home');
 }
 function logout(){
-  localStorage.removeItem('dk_sess');
-  S={user:null,wallets:[],wid:null,trx:[],budgets:[],savings:[],routines:[]};
-  OUT_CATS.length=0;IN_CATS.length=0;
-  document.getElementById('app').style.display='none';
-  document.getElementById('auth-page').classList.add('active');
-  document.getElementById('au').value='';
-  document.getElementById('ae').textContent='';
-  const btn=document.getElementById('as-btn');if(btn){btn.style.opacity='';btn.disabled=false;}
+  const m=document.createElement('div');
+  m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(8px)';
+  m.innerHTML=`<div style="background:var(--card);border-radius:24px 24px 0 0;width:100%;max-width:430px;padding:24px 18px 40px;text-align:center;border:1px solid var(--border);border-bottom:none">
+    <div style="width:32px;height:3px;background:var(--border2);border-radius:2px;margin:0 auto 20px"></div>
+    <div style="font-size:22px;margin-bottom:8px">👋</div>
+    <div style="font-size:17px;font-weight:800;margin-bottom:6px;letter-spacing:-.3px">Keluar dari Duitku?</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:24px;line-height:1.5">Data kamu aman di cloud.<br>Login lagi kapan saja dengan username yang sama.</div>
+    <button id="_lout_y" style="width:100%;padding:13px;border-radius:12px;border:none;background:var(--red);color:#fff;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:8px;font-family:'DM Sans',sans-serif">Ya, Keluar</button>
+    <button id="_lout_n" style="width:100%;padding:13px;border-radius:12px;border:1.5px solid var(--border);background:none;font-size:14px;font-weight:600;cursor:pointer;color:var(--muted);font-family:'DM Sans',sans-serif">Batal</button>
+  </div>`;
+  document.body.appendChild(m);
+  m.querySelector('#_lout_y').onclick=()=>{
+    m.remove();
+    localStorage.removeItem('dk_sess');
+    S={user:null,wallets:[],wid:null,trx:[],budgets:[],savings:[],routines:[]};
+    OUT_CATS.length=0;IN_CATS.length=0;
+    document.getElementById('app').style.display='none';
+    document.getElementById('auth-page').classList.add('active');
+    document.getElementById('au').value='';
+    document.getElementById('ae').textContent='';
+    const btn=document.getElementById('as-btn');if(btn){btn.style.opacity='';btn.disabled=false;}
+  };
+  m.querySelector('#_lout_n').onclick=()=>m.remove();
+  m.onclick=e=>{if(e.target===m)m.remove()};
 }
 
 // ── DATA LOAD ─────────────────────────────────────────
@@ -896,6 +915,19 @@ function rHome(){
 
 // ── TRANSACTION LIST ──────────────────────────────────
 let trxFilter='all';
+let trxMonthOffset=0; // 0 = bulan ini, -1 = bulan lalu, dst
+function shiftMonth(d){
+  const next=trxMonthOffset+d;
+  if(next>0)return; // tidak bisa ke masa depan
+  trxMonthOffset=next;
+  rTrx();
+}
+function resetMonthFilter(){trxMonthOffset=0;rTrx();}
+function getMonthFilter(){
+  const now=new Date();
+  const d=new Date(now.getFullYear(),now.getMonth()+trxMonthOffset,1);
+  return{year:d.getFullYear(),month:d.getMonth(),label:d.toLocaleDateString('id-ID',{month:'long',year:'numeric'})};
+}
 function setTrxFilter(f){
   trxFilter=f;
   document.querySelectorAll('#pg-trx .seg-b').forEach((b,i)=>b.classList.toggle('on',['all','in','out'][i]===f));
@@ -903,11 +935,19 @@ function setTrxFilter(f){
 }
 function rTrx(){
   updWalletChips();
+  const{year,month,label}=getMonthFilter();
+  const lbl=document.getElementById('trx-month-lbl');
+  if(lbl)lbl.textContent=label+(trxMonthOffset===0?' (tap reset)':'');
+  const nextBtn=document.getElementById('trx-next-btn');
+  if(nextBtn)nextBtn.style.opacity=trxMonthOffset===0?'0.3':'1';
   const li=document.getElementById('t-list');
-  let data=S.trx.slice();
+  let data=S.trx.filter(t=>{
+    const d=parseLocalDate(t.date);
+    return d.getFullYear()===year&&d.getMonth()===month;
+  });
   if(trxFilter==='in')data=data.filter(t=>t.type==='in');
   else if(trxFilter==='out')data=data.filter(t=>t.type==='out');
-  if(!data.length){li.innerHTML=`<div class="empty"><div class="empty-title">Belum ada transaksi</div><div class="empty-sub">Tap + untuk mencatat</div></div>`;return}
+  if(!data.length){li.innerHTML=`<div class="empty"><div class="empty-title">Tidak ada transaksi</div><div class="empty-sub">Belum ada transaksi di ${label}</div></div>`;return}
   const totalIn=data.filter(t=>t.type==='in'&&t.category!=='transfer').reduce((a,t)=>a+toNum(t.amount),0);
   const totalOut=data.filter(t=>t.type==='out'&&t.category!=='transfer').reduce((a,t)=>a+toNum(t.amount),0);
   const summaryHtml=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
@@ -1039,6 +1079,31 @@ async function saveTrx(){
     freshWallets.forEach(fw=>{const sw=S.wallets.find(x=>x.id===fw.id);if(sw)sw.balance=toNum(fw.balance);});
     const w=S.wallets.find(x=>x.id===wid);
     if(!w){toast('Dompet tidak ditemukan','e');return}
+    // Cek potensi saldo negatif untuk pengeluaran baru
+    const effType=isEditTransfer?oldTrx.type:curTrxType;
+    if(effType==='out'&&!id){
+      const projBal=toNum(w.balance)-amt;
+      if(projBal<0){
+        const proceed=await new Promise(res=>{
+          const m=document.createElement('div');
+          m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(8px)';
+          m.innerHTML=`<div style="background:var(--card);border-radius:24px 24px 0 0;width:100%;max-width:430px;padding:24px 18px 40px;text-align:center;border:1px solid var(--border);border-bottom:none">
+            <div style="width:32px;height:3px;background:var(--border2);border-radius:2px;margin:0 auto 20px"></div>
+            <div style="font-size:22px;margin-bottom:8px">⚠️</div>
+            <div style="font-size:17px;font-weight:800;margin-bottom:6px;letter-spacing:-.3px">Saldo Tidak Cukup</div>
+            <div style="font-size:13px;color:var(--muted);margin-bottom:6px">Saldo ${esc(w.name)}: <strong style="color:var(--text)">${rp(w.balance)}</strong></div>
+            <div style="font-size:13px;color:var(--muted);margin-bottom:20px">Setelah transaksi: <strong style="color:var(--red)">${rp(projBal)}</strong></div>
+            <button id="_nb_y" style="width:100%;padding:13px;border-radius:12px;border:none;background:var(--red);color:#fff;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:8px;font-family:'DM Sans',sans-serif">Lanjutkan</button>
+            <button id="_nb_n" style="width:100%;padding:13px;border-radius:12px;border:1.5px solid var(--border);background:none;font-size:14px;font-weight:600;cursor:pointer;color:var(--muted);font-family:'DM Sans',sans-serif">Batal</button>
+          </div>`;
+          document.body.appendChild(m);
+          m.querySelector('#_nb_y').onclick=()=>{m.remove();res(true)};
+          m.querySelector('#_nb_n').onclick=()=>{m.remove();res(false)};
+          m.onclick=e=>{if(e.target===m){m.remove();res(false)}};
+        });
+        if(!proceed)return;
+      }
+    }
     if(oldTrx&&oldTrx.wallet_id!==wid){
       const wOld=S.wallets.find(x=>x.id===oldTrx.wallet_id);
       if(wOld){
