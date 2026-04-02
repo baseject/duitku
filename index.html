@@ -747,6 +747,39 @@ async function doLogin(usr){
   document.getElementById('auth-page').classList.remove('active');
   document.getElementById('app').style.display='flex';
   navTo('home');
+  // 4. Purge data soft-deleted >90 hari — jalan di background, tidak blokir UI
+  purgeOldDeletedData().catch(()=>{});
+}
+
+// ── PURGE DATA SOFT-DELETED > 90 HARI ────────────────
+// Hanya hapus data yang sudah di-soft-delete (deleted_at IS NOT NULL)
+// Data aktif tidak pernah disentuh
+async function purgeOldDeletedData(){
+  if(!S.user?.id)return;
+  const uid=S.user.id;
+  // Batas waktu: 90 hari lalu
+  const cutoff=new Date();
+  cutoff.setDate(cutoff.getDate()-90);
+  const cutoffStr=cutoff.toISOString();
+  // Cek apakah sudah purge hari ini (hindari berulang tiap sesi)
+  const lastPurge=localStorage.getItem('dk_last_purge_'+uid);
+  const today=new Date().toISOString().split('T')[0];
+  if(lastPurge===today)return;
+  try{
+    // Hapus permanen semua tabel yang pakai soft delete
+    // deleted_at <= cutoff artinya sudah dihapus lebih dari 90 hari lalu
+    await Promise.all([
+      db('DELETE',`dk_trx?user_id=eq.${uid}&deleted_at=lte.${cutoffStr}`),
+      db('DELETE',`dk_budgets?user_id=eq.${uid}&deleted_at=lte.${cutoffStr}`),
+      db('DELETE',`dk_savings?user_id=eq.${uid}&deleted_at=lte.${cutoffStr}`),
+      db('DELETE',`dk_wallets?user_id=eq.${uid}&deleted_at=lte.${cutoffStr}`),
+      db('DELETE',`dk_routines?user_id=eq.${uid}&deleted_at=lte.${cutoffStr}`),
+    ]);
+    localStorage.setItem('dk_last_purge_'+uid,today);
+    console.log('[Duitku] purge selesai — data soft-deleted >90 hari dihapus');
+  }catch(e){
+    console.warn('[Duitku] purge gagal (tidak kritis):',e.message);
+  }
 }
 function logout(){
   const m=document.createElement('div');
@@ -2059,6 +2092,8 @@ async function init(){
       document.getElementById('auth-page').classList.remove('active');
       document.getElementById('app').style.display='flex';
       navTo('home');
+      // Purge data soft-deleted >90 hari — background, tidak blokir UI
+      purgeOldDeletedData().catch(()=>{});
     }catch{
       localStorage.removeItem('dk_sess');
       document.getElementById('auth-page').classList.add('active');
