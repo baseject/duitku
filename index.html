@@ -550,7 +550,14 @@ const gw=()=>S.wallets.find(w=>w.id===S.wid);
 
 // ── UTILS ─────────────────────────────────────────────
 const rp=n=>{if(n==null||n==='')return'—';const v=Number(n);if(isNaN(v)||!isFinite(v))return'Rp 0';return'Rp '+v.toLocaleString('id-ID',{maximumFractionDigits:0})};
-const todayD=()=>new Date().toISOString().split('T')[0];
+const todayD = () => {
+    const d = new Date();
+    return [
+        d.getFullYear(),
+        String(d.getMonth() + 1).padStart(2, '0'),
+        String(d.getDate()).padStart(2, '0')
+    ].join('-');
+};
 const parseLocalDate=d=>{if(!d)return new Date(0);const p=String(d).split('T')[0].split('-');return new Date(+p[0],+p[1]-1,+p[2])};
 const fmtDS=d=>{if(!d)return'—';return parseLocalDate(d).toLocaleDateString('id-ID',{day:'numeric',month:'short'})};
 const nuid=()=>crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2);
