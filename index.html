@@ -159,6 +159,11 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 .wchip{display:flex;align-items:center;gap:6px;background:var(--card2);border-radius:20px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;max-width:160px;border:1px solid var(--border)}
 .wchip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
+/* filter chip (search) */
+.fchip{display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border-radius:20px;font-size:11.5px;font-weight:600;border:1px solid var(--border);color:var(--text2);cursor:pointer;transition:.15s;background:var(--card);white-space:nowrap}
+.fchip:active{transform:scale(.96)}
+.fchip.on{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+
 /* wallet selector */
 .w-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);cursor:pointer}
 .w-item:last-child{border-bottom:none}
@@ -226,6 +231,7 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
     </div>
     <div style="padding:16px 20px;display:flex;flex-direction:column;gap:14px">
       <div id="h-balance"></div>
+      <div id="h-avg"></div>
       <div id="h-budget"></div>
       <div id="h-saving"></div>
       <div id="h-recent"></div>
@@ -502,6 +508,20 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
   <div class="sh-hd"><div class="sh-title">Cari Transaksi</div><button class="sh-close" onclick="csh('sh-srch')"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
   <div class="sh-body">
     <div class="fg"><input id="srch-q" type="text" placeholder="Nama, kategori, catatan" oninput="doSearch()"></div>
+    <div class="seg" id="srch-type-seg" style="margin-bottom:16px">
+      <div class="seg-b on" onclick="setSearchType('all')">Semua</div>
+      <div class="seg-b" onclick="setSearchType('in')">Masuk</div>
+      <div class="seg-b" onclick="setSearchType('out')">Keluar</div>
+    </div>
+    <div class="sec-title">Tanggal</div>
+    <div id="srch-date-chips" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px"></div>
+    <div class="fr" id="srch-date-custom" style="display:none;margin-bottom:14px">
+      <div><label class="fl">Dari</label><input type="date" id="srch-from" onchange="doSearch()"></div>
+      <div><label class="fl">Sampai</label><input type="date" id="srch-to" onchange="doSearch()"></div>
+    </div>
+    <div class="sec-title">Dompet</div>
+    <div id="srch-wallet-chips" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px"></div>
+    <div id="srch-summary"></div>
     <div id="srch-res"></div>
   </div>
 </div></div>
@@ -866,13 +886,43 @@ function updWalletChips(){
   ['hd-wn','t-wn'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=name});
 }
 
+// ── HOME STATS ────────────────────────────────────────
+function getSpendingStats(){
+  const now=new Date();
+  const todayStr=todayD();
+  const startWeek=new Date(now.getFullYear(),now.getMonth(),now.getDate()-6);
+  const startPrevWeek=new Date(startWeek.getFullYear(),startWeek.getMonth(),startWeek.getDate()-7);
+  const endPrevWeek=new Date(startWeek.getFullYear(),startWeek.getMonth(),startWeek.getDate()-1);
+  const isSpend=t=>t.type==='out'&&t.category!=='transfer';
+
+  const todayOut=S.trx.filter(t=>isSpend(t)&&t.date===todayStr).reduce((a,t)=>a+toNum(t.amount),0);
+
+  const weekTotal=S.trx.filter(t=>{
+    if(!isSpend(t))return false;
+    const d=parseLocalDate(t.date);
+    return d>=startWeek&&d<=now;
+  }).reduce((a,t)=>a+toNum(t.amount),0);
+
+  const prevWeekTotal=S.trx.filter(t=>{
+    if(!isSpend(t))return false;
+    const d=parseLocalDate(t.date);
+    return d>=startPrevWeek&&d<=endPrevWeek;
+  }).reduce((a,t)=>a+toNum(t.amount),0);
+
+  const avgWeek=weekTotal/7;
+  const avgPrevWeek=prevWeekTotal/7;
+  const trend=avgPrevWeek?((avgWeek-avgPrevWeek)/avgPrevWeek*100):(avgWeek>0?100:0);
+
+  return{todayOut,avgWeek,trend};
+}
+
 // ── HOME ──────────────────────────────────────────────
 function rHome(){
   updWalletChips();
   const w=gw();
   if(!w){
     document.getElementById('h-balance').innerHTML=`<div class="card" style="text-align:center;padding:32px"><div style="font-weight:700;margin-bottom:8px">Belum ada dompet</div><button class="btn btn-p mt8" onclick="openWalletAdd()">+ Tambah Dompet</button></div>`;
-    ['h-budget','h-saving','h-recent'].forEach(id=>document.getElementById(id).innerHTML='');
+    ['h-avg','h-budget','h-saving','h-recent'].forEach(id=>document.getElementById(id).innerHTML='');
     return;
   }
   const now=new Date();
@@ -895,6 +945,24 @@ function rHome(){
           <div style="font-size:10px;font-weight:600;color:var(--red);text-transform:uppercase;letter-spacing:.06em">↓ Keluar</div>
           <div style="font-size:15px;font-weight:700;color:var(--red);margin-top:3px;letter-spacing:-.3px">-${rp(moOut)}</div>
         </div>
+      </div>
+    </div>`;
+
+  const stats=getSpendingStats();
+  const trendUp=stats.trend>0.5;
+  const trendDown=stats.trend<-0.5;
+  const trendColor=trendUp?'var(--red)':trendDown?'var(--green)':'var(--muted)';
+  const trendIcon=trendUp?'↑':trendDown?'↓':'';
+  const trendTxt=Math.abs(stats.trend)>=1?Math.round(Math.abs(stats.trend))+'%':'';
+  document.getElementById('h-avg').innerHTML=`
+    <div class="card" style="display:grid;grid-template-columns:1fr 1fr;padding:14px 16px">
+      <div style="border-right:1px solid var(--border);padding-right:12px">
+        <div class="sec-title" style="margin-bottom:4px">Hari Ini</div>
+        <div style="font-size:16px;font-weight:800;letter-spacing:-.3px">${rp(stats.todayOut)}</div>
+      </div>
+      <div style="padding-left:12px">
+        <div class="sec-title" style="margin-bottom:4px">Rata&sup2; 7 Hari</div>
+        <div style="font-size:16px;font-weight:800;letter-spacing:-.3px">${rp(stats.avgWeek)}${trendTxt?` <span style="font-size:11px;font-weight:700;color:${trendColor}">${trendIcon}${trendTxt}</span>`:''}</div>
       </div>
     </div>`;
 
@@ -1753,24 +1821,143 @@ async function saveTransfer(){
 }
 
 // ── SEARCH ────────────────────────────────────────────
+let SF={type:'all',datePreset:'30d',walletId:'all'};
+const SRCH_DATE_PRESETS=[{v:'7d',l:'7 Hari'},{v:'30d',l:'30 Hari'},{v:'month',l:'Bulan Ini'},{v:'all',l:'Semua'},{v:'custom',l:'Custom'}];
+
 function openSearch(){
   document.getElementById('srch-q').value='';
-  document.getElementById('srch-res').innerHTML='';
+  document.getElementById('srch-from').value='';
+  document.getElementById('srch-to').value='';
+  SF={type:'all',datePreset:'30d',walletId:'all'};
+  document.querySelectorAll('#srch-type-seg .seg-b').forEach((b,i)=>b.classList.toggle('on',['all','in','out'][i]==='all'));
+  document.getElementById('srch-date-custom').style.display='none';
+  renderSearchDateChips();
+  renderSearchWalletChips();
   osh('sh-srch');
   setTimeout(()=>document.getElementById('srch-q').focus(),350);
+  doSearch();
+}
+function setSearchType(t){
+  SF.type=t;
+  document.querySelectorAll('#srch-type-seg .seg-b').forEach((b,i)=>b.classList.toggle('on',['all','in','out'][i]===t));
+  doSearch();
+}
+function renderSearchDateChips(){
+  const el=document.getElementById('srch-date-chips');
+  if(!el)return;
+  el.innerHTML=SRCH_DATE_PRESETS.map(p=>`<div class="fchip ${SF.datePreset===p.v?'on':''}" onclick="setSearchDate('${p.v}')">${esc(p.l)}</div>`).join('');
+}
+function setSearchDate(v){
+  SF.datePreset=v;
+  document.getElementById('srch-date-custom').style.display=v==='custom'?'grid':'none';
+  renderSearchDateChips();
+  if(v!=='custom')doSearch();
+}
+function renderSearchWalletChips(){
+  const el=document.getElementById('srch-wallet-chips');
+  if(!el)return;
+  const chips=[{id:'all',name:'Semua'},...S.wallets.map(w=>({id:w.id,name:w.name}))];
+  el.innerHTML=chips.map(w=>`<div class="fchip ${SF.walletId===w.id?'on':''}" onclick="setSearchWallet('${esc(w.id)}')">${esc(w.name)}</div>`).join('');
+}
+function setSearchWallet(id){
+  SF.walletId=id;
+  renderSearchWalletChips();
+  doSearch();
+}
+function resolveSearchDateRange(){
+  if(SF.datePreset==='all')return{from:null,to:null};
+  if(SF.datePreset==='custom'){
+    const from=document.getElementById('srch-from').value||null;
+    const to=document.getElementById('srch-to').value||null;
+    return{from,to};
+  }
+  const now=new Date();
+  if(SF.datePreset==='month'){
+    const from=new Date(now.getFullYear(),now.getMonth(),1);
+    return{from:from.toISOString().split('T')[0],to:todayD()};
+  }
+  const days=SF.datePreset==='7d'?6:29;
+  const from=new Date(now.getFullYear(),now.getMonth(),now.getDate()-days);
+  return{from:from.toISOString().split('T')[0],to:todayD()};
+}
+function dateGroupLabel(date){
+  const today=todayD();
+  const y=new Date();y.setDate(y.getDate()-1);
+  const yesterday=y.toISOString().split('T')[0];
+  if(date===today)return'Hari Ini';
+  if(date===yesterday)return'Kemarin';
+  return fmtDS(date);
+}
+function highlightText(text,q){
+  if(!q)return esc(text);
+  const idx=text.toLowerCase().indexOf(q.toLowerCase());
+  if(idx===-1)return esc(text);
+  const before=esc(text.slice(0,idx));
+  const match=esc(text.slice(idx,idx+q.length));
+  const after=esc(text.slice(idx+q.length));
+  return`${before}<mark style="background:var(--goldl);color:var(--gold);border-radius:3px;padding:0 2px">${match}</mark>${after}`;
+}
+function srchLI(t,q){
+  const ci=catInfo(t.category,t.type);
+  const w=S.wallets.find(x=>x.id===t.wallet_id);
+  const valColor=t.type==='in'?'var(--green)':'var(--red)';
+  const valPrefix=t.type==='in'?'+':'-';
+  const titleBase=ci.l+(t.note?` · ${t.note}`:'');
+  return`<div class="li" style="cursor:pointer" onclick="openTrxEdit('${esc(t.id)}')">
+    <div class="type-dot ${t.type==='in'?'in':'out'}"></div>
+    <div class="li-body">
+      <div class="li-title">${highlightText(titleBase,q)}</div>
+      <div class="li-sub">${esc(w?.name||'—')} · ${fmtDS(t.date)}</div>
+    </div>
+    <div class="li-right"><div class="li-val" style="color:${valColor}">${valPrefix}${rp(t.amount)}</div></div>
+  </div>`;
 }
 let _srchTimer=null;
 function doSearch(){
   clearTimeout(_srchTimer);
   _srchTimer=setTimeout(()=>{
-    const q=document.getElementById('srch-q').value.trim().toLowerCase();
+    const qEl=document.getElementById('srch-q');
+    const q=qEl?qEl.value.trim().toLowerCase():'';
     const el=document.getElementById('srch-res');
-    if(!q){el.innerHTML='';return}
-    const results=S.trx.filter(t=>{
+    const sumEl=document.getElementById('srch-summary');
+    if(!el||!sumEl)return;
+    const{from,to}=resolveSearchDateRange();
+
+    let results=S.trx.filter(t=>{
+      if(t.category==='transfer')return false;
+      if(SF.type!=='all'&&t.type!==SF.type)return false;
+      if(SF.walletId!=='all'&&t.wallet_id!==SF.walletId)return false;
+      if(from&&t.date<from)return false;
+      if(to&&t.date>to)return false;
+      if(!q)return true;
       const ci=catInfo(t.category,t.type);
       return ci.l.toLowerCase().includes(q)||(t.note&&t.note.toLowerCase().includes(q))||(t.category&&t.category.toLowerCase().includes(q))||String(t.amount).includes(q);
-    }).slice(0,30);
-    el.innerHTML=results.length?results.map(t=>trxLI(t)).join(''):`<div style="color:var(--muted);font-size:13px;text-align:center;padding:24px 0">Tidak ada hasil</div>`;
+    });
+
+    results.sort((a,b)=>b.date.localeCompare(a.date));
+    const totalCount=results.length;
+    results=results.slice(0,50);
+
+    if(!totalCount){
+      sumEl.innerHTML='';
+      el.innerHTML=`<div style="color:var(--muted);font-size:13px;text-align:center;padding:24px 0">Tidak ada hasil</div>`;
+      return;
+    }
+
+    const net=results.reduce((a,t)=>a+(t.type==='in'?toNum(t.amount):-toNum(t.amount)),0);
+    const netLabel=net>=0?`+${rp(net)}`:`-${rp(Math.abs(net))}`;
+    sumEl.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--card2);border-radius:10px;margin-bottom:10px">
+      <span style="font-size:12px;color:var(--text2);font-weight:600">${totalCount} hasil${totalCount>50?' (tampil 50)':''}</span>
+      <span style="font-size:13px;font-weight:800;color:${net>=0?'var(--green)':'var(--red)'}">Net ${netLabel}</span>
+    </div>`;
+
+    const groups={};
+    results.forEach(t=>{if(!groups[t.date])groups[t.date]=[];groups[t.date].push(t)});
+    el.innerHTML=Object.entries(groups).sort((a,b)=>b[0].localeCompare(a[0])).map(([date,trxs])=>`
+      <div style="margin-bottom:4px">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);padding:8px 0 4px;text-transform:uppercase;letter-spacing:.06em">${dateGroupLabel(date)}</div>
+        ${trxs.map(t=>srchLI(t,q)).join('')}
+      </div>`).join('');
   },200);
 }
 
